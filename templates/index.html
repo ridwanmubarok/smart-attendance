@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Beranda - Sistem Absensi{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-home mr-2"></i> Sistem Absensi Wajah
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Camera Feed Column -->
+    <div class="lg:col-span-2">
+        <div class="bg-gray-800 rounded-xl overflow-hidden shadow-lg border border-gray-700 transition-all duration-300 hover:shadow-xl h-full flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-700 flex items-center bg-gray-800/80">
+                <i class="fas fa-video text-primary-400 mr-3 text-xl"></i>
+                <h3 class="text-lg font-medium text-white">Kamera Absensi</h3>
+            </div>
+            
+            <div class="p-6 flex-grow flex flex-col">
+                <div class="relative rounded-lg overflow-hidden flex-grow bg-gray-900 flex items-center justify-center">
+                    <!-- Camera Feed -->
+                    <img src="{{ url_for('video_feed') }}" alt="Camera Feed" class="max-h-full max-w-full rounded-lg shadow-lg">
+                    
+                    <!-- Status Badge -->
+                    <div class="absolute bottom-4 left-4 px-3 py-1 bg-black/70 text-white text-sm rounded-full backdrop-blur flex items-center">
+                        <i class="fas fa-circle text-green-500 animate-pulse mr-2"></i>
+                        <span>Live</span>
+                    </div>
+                </div>
+                
+                <div class="mt-6 bg-gray-700/30 border border-gray-700 rounded-lg p-4">
+                    <div class="text-center">
+                        <h4 class="text-lg font-medium text-white mb-2">Instruksi</h4>
+                        <p class="text-gray-300">Posisikan wajah Anda di depan kamera hingga terdeteksi dan teridentifikasi oleh sistem.</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                        <div class="bg-gray-800/60 rounded-lg p-3 text-center">
+                            <div class="rounded-full h-10 w-10 bg-blue-900/50 flex items-center justify-center mx-auto mb-2">
+                                <i class="fas fa-arrows-alt-h text-blue-400"></i>
+                            </div>
+                            <p class="text-xs text-gray-300">Pastikan posisi wajah berada di tengah frame</p>
+                        </div>
+                        <div class="bg-gray-800/60 rounded-lg p-3 text-center">
+                            <div class="rounded-full h-10 w-10 bg-purple-900/50 flex items-center justify-center mx-auto mb-2">
+                                <i class="fas fa-lightbulb text-purple-400"></i>
+                            </div>
+                            <p class="text-xs text-gray-300">Pastikan pencahayaan cukup untuk pengenalan wajah</p>
+                        </div>
+                        <div class="bg-gray-800/60 rounded-lg p-3 text-center">
+                            <div class="rounded-full h-10 w-10 bg-green-900/50 flex items-center justify-center mx-auto mb-2">
+                                <i class="fas fa-check-circle text-green-400"></i>
+                            </div>
+                            <p class="text-xs text-gray-300">Tunggu hingga sistem mengenali dan mencatat absensi</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Information Column -->
+    <div>
+        <div class="bg-gray-800 rounded-xl overflow-hidden shadow-lg border border-gray-700 transition-all duration-300 hover:shadow-xl">
+            <div class="px-6 py-4 border-b border-gray-700 flex items-center bg-gray-800/80">
+                <i class="fas fa-info-circle text-primary-400 mr-3 text-xl"></i>
+                <h3 class="text-lg font-medium text-white">Informasi</h3>
+            </div>
+            
+            <div class="p-6">
+                <!-- Current Time Widget -->
+                <div class="bg-gradient-to-r from-blue-800/30 to-purple-800/30 border border-blue-800/50 rounded-lg p-4 mb-6 text-center">
+                    <h4 class="text-lg font-medium text-white mb-2" id="current-date">Loading...</h4>
+                    <div class="text-3xl font-bold text-white mb-2" id="current-time">00:00:00</div>
+                    <p class="text-sm text-blue-300">Jam server digunakan untuk pencatatan</p>
+                </div>
+                
+                <!-- Stats Widgets -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-gray-700/30 border border-gray-700 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-white" id="today-attendance-count">-</div>
+                        <p class="text-xs text-gray-400">Kehadiran Hari Ini</p>
+                    </div>
+                    <div class="bg-gray-700/30 border border-gray-700 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-white" id="total-employees">-</div>
+                        <p class="text-xs text-gray-400">Total Karyawan</p>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <h4 class="text-lg font-medium text-white mb-3">Aktivitas Terbaru</h4>
+                <div class="bg-gray-700/30 border border-gray-700 rounded-lg p-4 mb-4 max-h-60 overflow-y-auto" id="recent-activity">
+                    <div class="text-center text-gray-400 py-4">
+                        <i class="fas fa-spinner fa-spin mb-2 text-xl"></i>
+                        <p>Memuat aktivitas...</p>
+                    </div>
+                </div>
+                
+                <!-- System Status -->
+                <h4 class="text-lg font-medium text-white mb-3">Status Sistem</h4>
+                <ul class="space-y-2">
+                    <li class="flex justify-between items-center px-4 py-3 bg-gray-700/50 rounded-lg">
+                        <span class="text-gray-300">Kamera</span>
+                        <span class="px-3 py-1 text-xs font-medium bg-green-600 text-white rounded-full">
+                            <i class="fas fa-check-circle mr-1"></i> Aktif
+                        </span>
+                    </li>
+                    <li class="flex justify-between items-center px-4 py-3 bg-gray-700/50 rounded-lg">
+                        <span class="text-gray-300">Pengenalan Wajah</span>
+                        <span class="px-3 py-1 text-xs font-medium bg-green-600 text-white rounded-full">
+                            <i class="fas fa-check-circle mr-1"></i> Berjalan
+                        </span>
+                    </li>
+                    <li class="flex justify-between items-center px-4 py-3 bg-gray-700/50 rounded-lg">
+                        <span class="text-gray-300">Database</span>
+                        <span class="px-3 py-1 text-xs font-medium bg-green-600 text-white rounded-full">
+                            <i class="fas fa-check-circle mr-1"></i> Terhubung
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Update current time
+    function updateTime() {
+        const now = new Date();
+        
+        // Format date: Senin, 01 Januari 2023
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const dateStr = now.toLocaleDateString('id-ID', options);
+        
+        // Format time: 00:00:00
+        const timeStr = now.toLocaleTimeString('id-ID');
+        
+        $('#current-date').text(dateStr);
+        $('#current-time').text(timeStr);
+    }
+    
+    // Update recent activity
+    function updateRecentActivity() {
+        $.ajax({
+            url: "{{ url_for('get_attendance_data') }}",
+            type: "POST",
+            data: {},
+            success: function(response) {
+                if (response.success && response.data && response.data.length > 0) {
+                    // Get today's date in YYYY-MM-DD format for comparison
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    // Count today's attendance
+                    const todayRecords = response.data.filter(record => record.date === today);
+                    $('#today-attendance-count').text(todayRecords.length);
+                    
+                    // Count unique employees
+                    const uniqueEmployees = new Set();
+                    response.data.forEach(record => {
+                        uniqueEmployees.add(record.employee_id);
+                    });
+                    $('#total-employees').text(uniqueEmployees.size);
+                    
+                    // Update recent activity list (show last 5)
+                    const recentActivity = response.data.slice(0, 5);
+                    let activityHTML = '';
+                    
+                    if (recentActivity.length > 0) {
+                        recentActivity.forEach(record => {
+                            const recordTime = new Date(record.check_in).toLocaleTimeString('id-ID');
+                            const isToday = record.date === today;
+                            const recordDate = isToday ? 'Hari ini' : new Date(record.date).toLocaleDateString('id-ID');
+                            
+                            const recordStatus = record.check_out ? 'CHECK-OUT' : 'CHECK-IN';
+                            const statusColor = record.check_out ? 'text-red-400' : 'text-green-400';
+                            
+                            activityHTML += `
+                            <div class="border-b border-gray-700 pb-2 mb-2 last:border-0 last:pb-0 last:mb-0">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <span class="font-medium text-white">${record.name}</span>
+                                        <div class="text-xs text-gray-400">${recordDate}, ${recordTime}</div>
+                                    </div>
+                                    <span class="text-xs font-medium ${statusColor}">${recordStatus}</span>
+                                </div>
+                            </div>`;
+                        });
+                    } else {
+                        activityHTML = `<div class="text-center text-gray-400 py-4">Belum ada aktivitas yang tercatat</div>`;
+                    }
+                    
+                    $('#recent-activity').html(activityHTML);
+                } else {
+                    $('#today-attendance-count').text('0');
+                    $('#total-employees').text('0');
+                    $('#recent-activity').html('<div class="text-center text-gray-400 py-4">Belum ada aktivitas yang tercatat</div>');
+                }
+            },
+            error: function() {
+                $('#today-attendance-count').text('-');
+                $('#total-employees').text('-');
+                $('#recent-activity').html('<div class="text-center text-red-400 py-4">Gagal memuat data aktivitas</div>');
+            }
+        });
+    }
+    
+    $(document).ready(function() {
+        // Initial updates
+        updateTime();
+        updateRecentActivity();
+        
+        // Update time every second
+        setInterval(updateTime, 1000);
+        
+        // Update activity every 30 seconds
+        setInterval(updateRecentActivity, 30000);
+    });
+</script>
+{% endblock %} 

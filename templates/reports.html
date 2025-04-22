@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}Laporan - Sistem Absensi{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-chart-bar mr-2"></i> Laporan Kehadiran
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Filters Card -->
+    <div class="bg-gray-800 rounded-xl overflow-hidden shadow-lg border border-gray-700 transition-all duration-300 hover:shadow-xl">
+        <div class="px-6 py-4 border-b border-gray-700 flex items-center bg-gray-800/80">
+            <i class="fas fa-filter text-primary-400 mr-3 text-xl"></i>
+            <h3 class="text-lg font-medium text-white">Filter Laporan</h3>
+        </div>
+        
+        <div class="p-6">
+            <form id="filter-form" class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div>
+                    <label for="employee_filter" class="block text-sm font-medium text-gray-300 mb-1">Karyawan</label>
+                    <div class="relative">
+                        <select class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 appearance-none" id="employee_filter" name="employee_id">
+                            <option value="">Semua Karyawan</option>
+                            {% for employee in employees %}
+                                <option value="{{ employee.id }}">{{ employee.name }} ({{ employee.employee_id }})</option>
+                            {% endfor %}
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="start_date" class="block text-sm font-medium text-gray-300 mb-1">Tanggal Mulai</label>
+                    <input type="date" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" id="start_date" name="start_date">
+                </div>
+                
+                <div>
+                    <label for="end_date" class="block text-sm font-medium text-gray-300 mb-1">Tanggal Akhir</label>
+                    <input type="date" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" id="end_date" name="end_date">
+                </div>
+                
+                <div class="flex items-end">
+                    <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+                        <i class="fas fa-search mr-2"></i> Cari Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Reports Card -->
+    <div class="bg-gray-800 rounded-xl overflow-hidden shadow-lg border border-gray-700 transition-all duration-300 hover:shadow-xl">
+        <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between bg-gray-800/80">
+            <div class="flex items-center">
+                <i class="fas fa-table text-primary-400 mr-3 text-xl"></i>
+                <h3 class="text-lg font-medium text-white">Data Kehadiran</h3>
+            </div>
+            <div class="flex space-x-2">
+                <button id="export-csv" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                    <i class="fas fa-file-csv mr-1"></i> CSV
+                </button>
+                <button id="export-pdf" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                    <i class="fas fa-file-pdf mr-1"></i> PDF
+                </button>
+                <button id="print-report" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    <i class="fas fa-print mr-1"></i> Print
+                </button>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div id="report-container">
+                <!-- Report header, only visible for print -->
+                <div id="report-header" class="hidden print:block mb-6 text-center">
+                    <h2 class="text-xl font-bold mb-1">Laporan Absensi Karyawan</h2>
+                    <p class="text-sm mb-4" id="report-period">Periode: -</p>
+                </div>
+                
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 print:hidden">
+                    <div class="bg-gray-700/30 border border-gray-700 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-white" id="total-records">-</div>
+                        <p class="text-xs text-gray-400">Total Kehadiran</p>
+                    </div>
+                    <div class="bg-gray-700/30 border border-gray-700 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-white" id="avg-check-in">-</div>
+                        <p class="text-xs text-gray-400">Rata-rata Jam Masuk</p>
+                    </div>
+                    <div class="bg-gray-700/30 border border-gray-700 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-white" id="avg-work-hours">-</div>
+                        <p class="text-xs text-gray-400">Rata-rata Durasi Kerja</p>
+                    </div>
+                </div>
+                
+                <!-- Data Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-700" id="attendance-table">
+                        <thead>
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">No.</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nama Karyawan</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">ID Karyawan</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Tanggal</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Check In</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Check Out</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Durasi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-700" id="attendance-data">
+                            <!-- Data will be populated via JavaScript -->
+                            <tr>
+                                <td colspan="7" class="px-4 py-8 text-center text-gray-400">
+                                    <i class="fas fa-filter mr-2"></i> Gunakan filter di atas untuk menampilkan data
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- No Data Message -->
+                <div id="no-data-message" class="hidden py-8">
+                    <div class="text-center">
+                        <i class="fas fa-search text-gray-500 text-5xl mb-4"></i>
+                        <h4 class="text-lg font-medium text-white mb-2">Tidak Ada Data</h4>
+                        <p class="text-gray-400">Tidak ditemukan data absensi untuk filter yang dipilih</p>
+                    </div>
+                </div>
+                
+                <!-- Loading Indicator -->
+                <div id="loading-indicator" class="hidden py-8">
+                    <div class="text-center">
+                        <div class="inline-block animate-spin h-8 w-8 border-4 border-gray-400 border-t-primary-400 rounded-full mb-4"></div>
+                        <p class="text-gray-400">Memuat data...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Set default dates (current month)
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        
+        // Format dates as YYYY-MM-DD
+        const formatDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        
+        $('#start_date').val(formatDate(firstDay));
+        $('#end_date').val(formatDate(lastDay));
+        
+        // Filter form submission
+        $('#filter-form').submit(function(e) {
+            e.preventDefault();
+            loadAttendanceData();
+        });
+        
+        // Load attendance data based on filters
+        function loadAttendanceData() {
+            // Show loading indicator
+            $('#attendance-data').html('');
+            $('#no-data-message').addClass('hidden');
+            $('#loading-indicator').removeClass('hidden');
+            
+            // Get filter values
+            const employeeId = $('#employee_filter').val();
+            const startDate = $('#start_date').val();
+            const endDate = $('#end_date').val();
+            
+            // Update report period for printable version
+            let periodText = 'Semua Periode';
+            if (startDate && endDate) {
+                periodText = `${startDate} s/d ${endDate}`;
+            } else if (startDate) {
+                periodText = `Dari ${startDate}`;
+            } else if (endDate) {
+                periodText = `Sampai ${endDate}`;
+            }
+            $('#report-period').text(`Periode: ${periodText}`);
+            
+            // Make AJAX request
+            $.ajax({
+                url: "{{ url_for('get_attendance_data') }}",
+                type: "POST",
+                data: {
+                    employee_id: employeeId,
+                    start_date: startDate,
+                    end_date: endDate
+                },
+                success: function(response) {
+                    // Hide loading indicator
+                    $('#loading-indicator').addClass('hidden');
+                    
+                    if (response.success && response.data && response.data.length > 0) {
+                        // Process data for table
+                        const records = response.data;
+                        let tableRows = '';
+                        
+                        // Calculate statistics
+                        let totalCheckInMinutes = 0;
+                        let totalWorkHours = 0;
+                        let recordsWithDuration = 0;
+                        
+                        records.forEach((record, index) => {
+                            // Format date
+                            const recordDate = new Date(record.date).toLocaleDateString('id-ID', { 
+                                weekday: 'long', 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                            });
+                            
+                            // Format times
+                            const checkInTime = record.check_in ? new Date(record.check_in).toLocaleTimeString('id-ID', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                            }) : '-';
+                            
+                            const checkOutTime = record.check_out ? new Date(record.check_out).toLocaleTimeString('id-ID', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                            }) : '-';
+                            
+                            // Calculate duration
+                            let duration = '-';
+                            if (record.check_in && record.check_out) {
+                                const checkIn = new Date(record.check_in);
+                                const checkOut = new Date(record.check_out);
+                                const durationMs = checkOut - checkIn;
+                                const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
+                                const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+                                duration = `${durationHours}h ${durationMinutes}m`;
+                                
+                                // For statistics
+                                totalWorkHours += durationMs / (1000 * 60 * 60);
+                                recordsWithDuration++;
+                            }
+                            
+                            // For check-in time statistics
+                            if (record.check_in) {
+                                const checkIn = new Date(record.check_in);
+                                totalCheckInMinutes += checkIn.getHours() * 60 + checkIn.getMinutes();
+                            }
+                            
+                            tableRows += `
+                            <tr class="hover:bg-gray-700/50 transition-colors">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">${index + 1}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">${record.name}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">${record.employee_code || '-'}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">${recordDate}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">${checkInTime}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">${checkOutTime}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">${duration}</td>
+                            </tr>`;
+                        });
+                        
+                        // Update table
+                        $('#attendance-data').html(tableRows);
+                        
+                        // Update summary
+                        $('#total-records').text(records.length);
+                        
+                        // Calculate average check-in time
+                        if (records.length > 0) {
+                            const avgCheckInMinutes = Math.round(totalCheckInMinutes / records.length);
+                            const avgHours = Math.floor(avgCheckInMinutes / 60);
+                            const avgMinutes = avgCheckInMinutes % 60;
+                            $('#avg-check-in').text(`${String(avgHours).padStart(2, '0')}:${String(avgMinutes).padStart(2, '0')}`);
+                        } else {
+                            $('#avg-check-in').text('-');
+                        }
+                        
+                        // Calculate average work hours
+                        if (recordsWithDuration > 0) {
+                            const avgWorkHours = totalWorkHours / recordsWithDuration;
+                            $('#avg-work-hours').text(`${avgWorkHours.toFixed(1)} jam`);
+                        } else {
+                            $('#avg-work-hours').text('-');
+                        }
+                    } else {
+                        // Show no data message
+                        $('#no-data-message').removeClass('hidden');
+                        $('#total-records').text('0');
+                        $('#avg-check-in').text('-');
+                        $('#avg-work-hours').text('-');
+                    }
+                },
+                error: function() {
+                    // Hide loading indicator
+                    $('#loading-indicator').addClass('hidden');
+                    
+                    // Show error message
+                    $('#attendance-data').html(`
+                        <tr>
+                            <td colspan="7" class="px-4 py-8 text-center text-red-400">
+                                <i class="fas fa-exclamation-triangle mr-2"></i> Gagal memuat data. Silakan coba lagi nanti.
+                            </td>
+                        </tr>
+                    `);
+                    
+                    // Reset summary
+                    $('#total-records').text('-');
+                    $('#avg-check-in').text('-');
+                    $('#avg-work-hours').text('-');
+                }
+            });
+        }
+        
+        // Export to CSV
+        $('#export-csv').click(function() {
+            // Check if we have data
+            if ($('#total-records').text() === '0' || $('#total-records').text() === '-') {
+                alert('Tidak ada data untuk diekspor');
+                return;
+            }
+            
+            // Get table data
+            const table = document.getElementById('attendance-table');
+            let csv = [];
+            
+            // Add headers
+            const headers = [];
+            const headerCells = table.querySelectorAll('thead th');
+            headerCells.forEach(cell => {
+                headers.push(cell.textContent.trim());
+            });
+            csv.push(headers.join(','));
+            
+            // Add rows
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const rowData = [];
+                const cells = row.querySelectorAll('td');
+                cells.forEach(cell => {
+                    // Clean up and quote data
+                    let data = cell.textContent.trim().replace(/"/g, '""');
+                    rowData.push(`"${data}"`);
+                });
+                csv.push(rowData.join(','));
+            });
+            
+            // Create and download CSV file
+            const csvContent = csv.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'attendance_report.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+        
+        // Print report
+        $('#print-report').click(function() {
+            // Check if we have data
+            if ($('#total-records').text() === '0' || $('#total-records').text() === '-') {
+                alert('Tidak ada data untuk dicetak');
+                return;
+            }
+            window.print();
+        });
+        
+        // Export to PDF (placeholder - would require additional libraries)
+        $('#export-pdf').click(function() {
+            alert('Fitur export PDF akan segera tersedia');
+        });
+        
+        // Load initial data (current month)
+        loadAttendanceData();
+    });
+</script>
+{% endblock %} 
