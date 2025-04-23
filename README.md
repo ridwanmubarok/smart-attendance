@@ -140,32 +140,6 @@ python app.py
 http://localhost:5000
 ```
 
-## Usage Guide
-
-### 1. Face Registration
-
-- Navigate to "Upload Face"
-- Enter employee/student details
-- Upload a clear front-facing photo
-- System will process and store face embeddings
-
-### 2. Live Detection
-
-- Access "Live Detection" page
-- Grant camera permissions
-- System will automatically:
-  - Detect faces using DETR
-  - Match against registered faces
-  - Record attendance with timestamp
-  - Display confidence scores
-
-### 3. Attendance Management
-
-- View real-time attendance status
-- Access historical attendance data
-- Generate attendance reports
-- Export data in various formats
-
 ## Project Structure
 
 ```
