@@ -2,6 +2,17 @@
 
 A modern face detection and recognition system that combines Artificial Intelligence (AI) and Internet of Things (IoT) technologies. Built with Flask, DETR (DEtection TRansformer), OpenCV, and deep learning models for accurate and efficient attendance management.
 
+## Developed By
+
+This project was developed as part of the Internet of Things course at Asia Cyber University by:
+
+**Team 3**
+
+- Akmal Fauzy
+- Faisal Dzulfikar
+- Heru Saputra
+- Ridwan Mubarok
+
 ## Key Features
 
 ### AI Capabilities
@@ -163,8 +174,6 @@ smart-attendance/
 │   ├── ai/
 │   │   ├── detr/           # DETR model implementation
 │   │   │   └── utils/         # AI utilities
-│   ├── iot/
-│   │   ├── camera/        # Camera management
 │   │   └── sensors/       # Additional sensor support
 │   ├── models/           # Database models
 │   ├── templates/        # HTML templates
@@ -196,9 +205,29 @@ We welcome contributions! Please check our contributing guidelines for details.
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+## Development Team
+
+This project was developed as an academic project for the Internet of Things course at Asia Cyber University.
+
+### Team 3 Members
+
+- **Akmal Fauzy**
+  - Project Lead
+  - AI Implementation
+- **Faisal Dzulfikar**
+  - IoT Integration
+  - System Architecture
+- **Heru Saputra**
+  - Frontend Development
+  - UI/UX Design
+- **Ridwan Mubarok**
+  - Backend Development
+  - Database Management
+
 ## Acknowledgments
 
 - DETR: Facebook AI Research
 - OpenCV Community
 - Flask Framework
 - PyTorch Team
+- Asia Cyber University Faculty and Staff
