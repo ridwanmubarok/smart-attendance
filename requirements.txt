@@ -1,3 +1,7 @@
+flask==3.0.2
+flask-sqlalchemy==3.1.1
+flask-migrate==4.0.5
+flask-wtf==1.2.1
 opencv-python>=4.8.0
 numpy>=1.26.0
 torch>=1.9.0
@@ -6,8 +10,8 @@ timm>=0.4.12
 transformers>=4.11.0
 matplotlib>=3.4.3
 Pillow>=10.0.0
-Flask>=2.0.0
-flask-wtf>=1.0.0
 Werkzeug>=2.0.0
 python-dotenv>=0.19.0
 scikit-learn>=1.0.0
+face_recognition
+dlib

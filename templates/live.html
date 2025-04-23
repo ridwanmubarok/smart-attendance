@@ -1,0 +1,523 @@
+{% extends "base.html" %}
+
+{% block title %}Live Detection - Smart Attendance{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-12 gap-8">
+            <!-- Left Column - Video Feed (8 columns) -->
+            <div class="col-span-12 lg:col-span-8">
+                <div class="bg-white shadow-xl rounded-3xl overflow-hidden border border-gray-100">
+                    <div class="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900">Live Face Detection</h2>
+                                <p class="mt-2 text-sm text-gray-600">Real-time attendance monitoring system</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
+                                <span class="text-sm font-medium text-gray-600">Live</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-8">
+                        <div class="relative w-full mx-auto">
+                            <div id="video-container"
+                                class="relative min-h-[600px] aspect-[16/9] bg-gray-900 rounded-2xl overflow-hidden shadow-2xl border-2 border-gray-800 transition-all duration-300 hover:shadow-3xl">
+                                <div class="absolute inset-0 flex items-center justify-center text-gray-400 bg-gradient-to-br from-gray-900 to-gray-800"
+                                    id="camera-placeholder">
+                                    <div class="text-center">
+                                        <svg class="mx-auto h-20 w-20 animate-pulse" fill="none" viewBox="0 0 24 24"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                        <p class="mt-6 text-xl font-medium">Starting camera...</p>
+                                        <p class="mt-2 text-sm text-gray-500">Please wait while we initialize the camera
+                                        </p>
+                                    </div>
+                                </div>
+                                <video id="video"
+                                    class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500"
+                                    autoplay playsinline muted></video>
+                                <canvas id="overlay" class="absolute inset-0 w-full h-full pointer-events-none"
+                                    style="z-index: 20;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Stats & Attendance (4 columns) -->
+            <div class="col-span-12 lg:col-span-4 space-y-6">
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div
+                        class="bg-white shadow-lg rounded-2xl p-6 border border-gray-100 transition-all duration-300 hover:shadow-xl">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-xl bg-green-100">
+                                <svg class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Present</p>
+                                <p class="text-2xl font-bold text-gray-900" id="presentCount">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-white shadow-lg rounded-2xl p-6 border border-gray-100 transition-all duration-300 hover:shadow-xl">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-xl bg-yellow-100">
+                                <svg class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Late</p>
+                                <p class="text-2xl font-bold text-gray-900" id="lateCount">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Today's Attendance List -->
+                <div class="bg-white shadow-xl rounded-3xl overflow-hidden border border-gray-100">
+                    <div class="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900">Today's Attendance</h2>
+                                <p class="mt-1 text-sm text-gray-600" id="attendanceSummary">Loading records...</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="relative">
+                                    <div class="h-3 w-3 bg-green-400 rounded-full animate-ping absolute"></div>
+                                    <div class="h-3 w-3 bg-green-400 rounded-full relative"></div>
+                                </div>
+                                <span class="text-sm text-gray-600">Live Updates</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="px-6 py-4">
+                        <div class="overflow-hidden">
+                            <div class="flow-root">
+                                <ul id="todayAttendanceBody" class="-my-5 divide-y divide-gray-100">
+                                    <!-- Today's attendance will be loaded here -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white shadow-xl rounded-3xl overflow-hidden border border-gray-100">
+                    <div class="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                        <h3 class="text-xl font-bold text-gray-900">Recent Detections</h3>
+                        <p class="mt-1 text-sm text-gray-600">Latest face detection results</p>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col"
+                                            class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                                            Employee
+                                        </th>
+                                        <th scope="col"
+                                            class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status
+                                        </th>
+                                        <th scope="col"
+                                            class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Time
+                                        </th>
+                                        <th scope="col"
+                                            class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                            Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detectionTableBody" class="divide-y divide-gray-200 bg-white">
+                                    <!-- Detection results will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let video = document.getElementById('video');
+    let overlay = document.getElementById('overlay');
+    let videoContainer = document.getElementById('video-container');
+    let cameraPlaceholder = document.getElementById('camera-placeholder');
+    let stream = null;
+    let isProcessing = false;
+    let ctx = overlay.getContext('2d');
+    let frameProcessingInterval = null;
+
+    // Configure overlay canvas and handle resize
+    function setupOverlay() {
+        const videoWidth = video.videoWidth || video.clientWidth;
+        const videoHeight = video.videoHeight || video.clientHeight;
+
+        // Set canvas dimensions to match container
+        const container = videoContainer.getBoundingClientRect();
+        overlay.width = container.width;
+        overlay.height = container.height;
+
+        // Calculate scale factors
+        const scaleX = overlay.width / videoWidth;
+        const scaleY = overlay.height / videoHeight;
+
+        return { scaleX, scaleY };
+    }
+
+    function clearOverlay() {
+        if (ctx) {
+            ctx.clearRect(0, 0, overlay.width, overlay.height);
+        }
+    }
+
+    function drawFaceBox(x, y, width, height, name, confidence, status, scale) {
+        const scaledX = x * scale.scaleX;
+        const scaledY = y * scale.scaleY;
+        const scaledWidth = width * scale.scaleX;
+        const scaledHeight = height * scale.scaleY;
+
+        // Draw face box with animation
+        ctx.strokeStyle = '#10B981';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
+
+        // Add glow effect
+        ctx.shadowColor = '#10B981';
+        ctx.shadowBlur = 10;
+
+        // Set font
+        ctx.font = 'bold 16px Inter';
+
+        // Prepare text
+        const text = `${name} (${(confidence * 100).toFixed(0)}%)`;
+        const statusText = status;
+
+        // Draw background for name with gradient
+        const gradient = ctx.createLinearGradient(scaledX, scaledY - 25, scaledX + ctx.measureText(text).width + 10, scaledY - 5);
+        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.95)');
+        gradient.addColorStop(1, 'rgba(6, 95, 70, 0.95)');
+        ctx.fillStyle = gradient;
+        const textWidth = ctx.measureText(text).width + 10;
+        ctx.fillRect(scaledX, scaledY - 25, textWidth, 20);
+
+        // Draw background for status
+        const statusWidth = ctx.measureText(statusText).width + 10;
+        let statusGradient;
+        if (status === 'Checked In') {
+            statusGradient = ctx.createLinearGradient(scaledX, scaledY - 45, scaledX + statusWidth, scaledY - 25);
+            statusGradient.addColorStop(0, 'rgba(16, 185, 129, 0.95)');
+            statusGradient.addColorStop(1, 'rgba(6, 95, 70, 0.95)');
+        } else if (status === 'Checked Out') {
+            statusGradient = ctx.createLinearGradient(scaledX, scaledY - 45, scaledX + statusWidth, scaledY - 25);
+            statusGradient.addColorStop(0, 'rgba(59, 130, 246, 0.95)');
+            statusGradient.addColorStop(1, 'rgba(29, 78, 216, 0.95)');
+        } else {
+            statusGradient = ctx.createLinearGradient(scaledX, scaledY - 45, scaledX + statusWidth, scaledY - 25);
+            statusGradient.addColorStop(0, 'rgba(156, 163, 175, 0.95)');
+            statusGradient.addColorStop(1, 'rgba(75, 85, 99, 0.95)');
+        }
+        ctx.fillStyle = statusGradient;
+        ctx.fillRect(scaledX, scaledY - 45, statusWidth, 20);
+
+        // Draw text
+        ctx.fillStyle = '#FFFFFF';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 2;
+        ctx.fillText(text, scaledX + 5, scaledY - 10);
+        ctx.fillText(statusText, scaledX + 5, scaledY - 30);
+
+        // Reset shadow
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+    }
+
+    async function startCamera() {
+        try {
+            // Get active camera configuration
+            const response = await fetch('/api/config/camera');
+            const config = await response.json();
+
+            if (!config || !config.camera_source) {
+                throw new Error('No camera configuration found. Please configure camera in settings first.');
+            }
+
+            let constraints = {
+                video: {
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                }
+            };
+
+            // If webcam is configured
+            if (config.camera_source === 'webcam') {
+                if (!config.active_camera_id) {
+                    throw new Error('No webcam selected. Please select a webcam in settings first.');
+                }
+                constraints.video.deviceId = { exact: config.active_camera_id };
+            }
+            // If CCTV is configured
+            else if (config.camera_source === 'cctv') {
+                if (!config.rtsp_url) {
+                    throw new Error('No RTSP URL configured. Please configure CCTV settings first.');
+                }
+                // For CCTV, we'll need to handle this differently
+                // This will be implemented in the backend
+                throw new Error('CCTV support will be implemented soon.');
+            }
+
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = stream;
+
+            await new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    video.play().then(() => {
+                        video.classList.remove('opacity-0');
+                        video.classList.add('opacity-100');
+                        cameraPlaceholder.classList.add('hidden');
+                        resolve();
+                    }).catch((error) => {
+                        console.error('Error playing video:', error);
+                        throw error;
+                    });
+                };
+            });
+
+            setupOverlay();
+            startFrameProcessing();
+            loadTodayAttendance();
+        } catch (err) {
+            console.error('Error accessing camera:', err);
+            let errorMessage = 'Failed to start camera. ';
+
+            if (err.name === 'NotAllowedError') {
+                errorMessage += 'Please allow camera access in your browser settings.';
+            } else if (err.name === 'NotFoundError') {
+                errorMessage += 'Camera not found. Please check your camera connection.';
+            } else if (err.name === 'NotReadableError') {
+                errorMessage += 'Camera is in use by another application.';
+            } else {
+                errorMessage += err.message || 'Please check camera settings and try again.';
+            }
+
+            // Show error message in placeholder
+            const placeholderText = document.querySelector('#camera-placeholder p.text-lg');
+            if (placeholderText) {
+                placeholderText.textContent = errorMessage;
+            }
+
+            // Reset UI state
+            video.classList.remove('opacity-100');
+            video.classList.add('opacity-0');
+            cameraPlaceholder.classList.remove('hidden');
+        }
+    }
+
+    function startFrameProcessing() {
+        stopFrameProcessing();
+        processFrame();
+        frameProcessingInterval = setInterval(processFrame, 1000);
+    }
+
+    function stopFrameProcessing() {
+        if (frameProcessingInterval) {
+            clearInterval(frameProcessingInterval);
+            frameProcessingInterval = null;
+        }
+    }
+
+    async function processFrame() {
+        if (!video.srcObject || isProcessing) return;
+
+        isProcessing = true;
+        const scale = setupOverlay();
+        clearOverlay();
+
+        try {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = video.videoWidth;
+            tempCanvas.height = video.videoHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(video, 0, 0);
+
+            const imageData = tempCanvas.toDataURL('image/jpeg', 0.8);
+            const response = await fetch('/process_frame', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ image: imageData })
+            });
+
+            const result = await response.json();
+            if (result.error) {
+                console.error('Error:', result.error);
+            } else if (result.detected_employees) {
+                displayDetections(result.detected_employees);
+                result.detected_employees.forEach(employee => {
+                    if (employee.face_location) {
+                        drawFaceBox(
+                            employee.face_location[3],
+                            employee.face_location[0],
+                            employee.face_location[1] - employee.face_location[3],
+                            employee.face_location[2] - employee.face_location[0],
+                            employee.name,
+                            employee.confidence,
+                            employee.status,
+                            scale
+                        );
+                    }
+                });
+                loadTodayAttendance();
+            }
+        } catch (error) {
+            console.error('Error processing frame:', error);
+        }
+
+        isProcessing = false;
+    }
+
+    function clearDetectionResults() {
+        const tableBody = document.getElementById('detectionTableBody');
+        tableBody.innerHTML = '';
+    }
+
+    function displayDetections(employees) {
+        const tableBody = document.getElementById('detectionTableBody');
+
+        employees.forEach(employee => {
+            const row = document.createElement('tr');
+            let statusColorClass = '';
+            switch (employee.status) {
+                case 'Checked In':
+                    statusColorClass = 'bg-green-100 text-green-800';
+                    break;
+                case 'Checked Out':
+                    statusColorClass = 'bg-blue-100 text-blue-800';
+                    break;
+                case 'Already Processed':
+                    statusColorClass = 'bg-gray-100 text-gray-800';
+                    break;
+                default:
+                    statusColorClass = 'bg-yellow-100 text-yellow-800';
+            }
+
+            row.innerHTML = `
+                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                    ${employee.name}
+                    <div class="text-xs text-gray-500">ID: ${employee.employee_id}</div>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColorClass}">
+                        ${employee.status}
+                    </span>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">${employee.time}</td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm">
+                    <div class="flex items-center">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: ${(employee.confidence * 100).toFixed(1)}%"></div>
+                        </div>
+                        <span class="ml-2 text-xs text-gray-500">${(employee.confidence * 100).toFixed(1)}%</span>
+                    </div>
+                </td>
+            `;
+            tableBody.insertBefore(row, tableBody.firstChild);
+        });
+
+        while (tableBody.children.length > 5) {
+            tableBody.removeChild(tableBody.lastChild);
+        }
+    }
+
+    async function loadTodayAttendance() {
+        try {
+            const response = await fetch('/api/today-attendance');
+            const data = await response.json();
+
+            document.getElementById('presentCount').textContent = data.present_count || 0;
+            document.getElementById('lateCount').textContent = data.late_count || 0;
+            document.getElementById('attendanceSummary').textContent =
+                `${data.total_count || 0} employees recorded today`;
+
+            const attendanceList = document.getElementById('todayAttendanceBody');
+            attendanceList.innerHTML = '';
+
+            data.attendance.forEach(record => {
+                const li = document.createElement('li');
+                li.className = 'py-4';
+                li.innerHTML = `
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-shrink-0">
+                            <span class="inline-flex items-center justify-center h-12 w-12 rounded-full ${record.status === 'present' ? 'bg-green-100' : 'bg-yellow-100'}">
+                                <span class="text-lg font-medium leading-none ${record.status === 'present' ? 'text-green-700' : 'text-yellow-700'}">
+                                    ${record.employee_name.charAt(0)}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">
+                                ${record.employee_name}
+                            </p>
+                            <p class="text-sm text-gray-500 truncate">
+                                ${record.department}
+                            </p>
+                        </div>
+                        <div class="flex-shrink-0 text-right">
+                            <p class="text-sm font-medium text-gray-900">
+                                ${record.check_in}
+                            </p>
+                            <p class="text-sm text-gray-500">
+                                ${record.check_out || 'Active'}
+                            </p>
+                        </div>
+                    </div>
+                `;
+                attendanceList.appendChild(li);
+            });
+        } catch (error) {
+            console.error('Error loading today\'s attendance:', error);
+        }
+    }
+
+    // Start camera automatically when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+        startCamera();
+    });
+
+    // Add resize observer for better size management
+    const resizeObserver = new ResizeObserver(entries => {
+        if (video.srcObject) {
+            setupOverlay();
+        }
+    });
+    resizeObserver.observe(videoContainer);
+
+    // Load initial attendance data
+    loadTodayAttendance();
+
+    // Refresh attendance data periodically
+    setInterval(loadTodayAttendance, 30000);
+</script>
+{% endblock %}

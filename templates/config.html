@@ -1,0 +1,619 @@
+{% extends "base.html" %}
+
+{% block title %}System Configuration - Smart Attendance{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">System Configuration</h1>
+        <p class="mt-1 text-sm text-gray-500">Manage system-wide settings and configurations.</p>
+    </div>
+
+    <!-- Time Configuration Card -->
+    <div class="mb-8 bg-white shadow-sm ring-1 ring-gray-100 rounded-lg overflow-hidden">
+        <div class="px-6 py-5">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-medium text-gray-900">Time Configuration</h2>
+                    <p class="mt-1 text-sm text-gray-500">Set standard check-in and check-out times for attendance
+                        tracking</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label for="check_in_time" class="block text-sm font-medium text-gray-700">Check-in Time</label>
+                    <div class="relative">
+                        <input type="time" name="check_in_time" id="check_in_time"
+                            class="block w-full h-10 px-4 py-2.5 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            value="{{ config.check_in_time if config else '08:00' }}">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="mt-1.5 text-sm text-gray-500">Standard time when employees should check in</p>
+                </div>
+
+                <div class="space-y-2">
+                    <label for="check_out_time" class="block text-sm font-medium text-gray-700">Check-out Time</label>
+                    <div class="relative">
+                        <input type="time" name="check_out_time" id="check_out_time"
+                            class="block w-full h-10 px-4 py-2.5 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            value="{{ config.check_out_time if config else '17:00' }}">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="mt-1.5 text-sm text-gray-500">Standard time when employees should check out</p>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button type="button" id="saveTimeConfig"
+                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Save Time Configuration
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Face Recognition Configuration Card -->
+    <div class="mb-8 bg-white shadow-sm ring-1 ring-gray-100 rounded-lg overflow-hidden">
+        <div class="px-6 py-5">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-medium text-gray-900">Face Recognition Settings</h2>
+                    <p class="mt-1 text-sm text-gray-500">Configure face detection and recognition parameters</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label for="confidence_threshold" class="block text-sm font-medium text-gray-700">Confidence
+                        Threshold (%)</label>
+                    <div class="relative">
+                        <input type="number" name="confidence_threshold" id="confidence_threshold"
+                            class="block w-full h-10 px-4 py-2.5 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            min="0" max="100" step="1" value="{{ config.confidence_threshold if config else '80' }}">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <span class="text-gray-500 sm:text-sm">%</span>
+                        </div>
+                    </div>
+                    <p class="mt-1.5 text-sm text-gray-500">Minimum confidence level for face recognition (0-100)</p>
+                </div>
+
+                <div class="space-y-2">
+                    <label for="detection_interval" class="block text-sm font-medium text-gray-700">Detection
+                        Interval</label>
+                    <div class="relative">
+                        <input type="number" name="detection_interval" id="detection_interval"
+                            class="block w-full h-10 px-4 py-2.5 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            min="100" step="100" value="{{ config.detection_interval if config else '1000' }}">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <span class="text-gray-500 sm:text-sm">ms</span>
+                        </div>
+                    </div>
+                    <p class="mt-1.5 text-sm text-gray-500">Time between face detection attempts in milliseconds</p>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button type="button" id="saveFaceConfig"
+                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Save Face Recognition Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Configuration -->
+    <div class="mb-8 bg-white shadow-sm ring-1 ring-gray-100 rounded-lg overflow-hidden">
+        <div class="px-6 py-5">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-medium text-gray-900">Camera Settings</h2>
+                    <p class="mt-1 text-sm text-gray-500">Configure and test your camera for face detection</p>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Camera Source Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Camera Source</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="relative">
+                            <input type="radio" id="webcam" name="camera_source" value="webcam" class="peer sr-only"
+                                {{ 'checked' if not config or config.camera_source=='webcam' }}>
+                            <label for="webcam"
+                                class="flex p-4 cursor-pointer bg-white border rounded-lg peer-checked:border-blue-500 peer-checked:ring-1 peer-checked:ring-blue-500">
+                                <div class="flex items-center">
+                                    <svg class="h-5 w-5 text-gray-400 peer-checked:text-blue-500" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                    <span class="ml-3 font-medium text-gray-900">Webcam</span>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="relative">
+                            <input type="radio" id="cctv" name="camera_source" value="cctv" class="peer sr-only"
+                                {{ 'checked' if config and config.camera_source=='cctv' }}>
+                            <label for="cctv"
+                                class="flex p-4 cursor-pointer bg-white border rounded-lg peer-checked:border-blue-500 peer-checked:ring-1 peer-checked:ring-blue-500">
+                                <div class="flex items-center">
+                                    <svg class="h-5 w-5 text-gray-400 peer-checked:text-blue-500" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                    <span class="ml-3 font-medium text-gray-900">CCTV</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div class="border rounded-lg overflow-hidden bg-gray-50">
+                    <div class="px-4 py-3 border-b border-gray-200 bg-white">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-medium text-gray-700">Camera Preview</h3>
+                            <div class="flex space-x-3">
+                                <button type="button" id="startPreview"
+                                    class="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <svg class="h-4 w-4 mr-1.5 preview-icon" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <svg class="h-4 w-4 mr-1.5 preview-loading hidden animate-spin" fill="none"
+                                        viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                            stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                        </path>
+                                    </svg>
+                                    <span class="preview-text">Start Preview</span>
+                                </button>
+                                <button type="button" id="stopPreview"
+                                    class="hidden inline-flex items-center px-3 py-1.5 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                    <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                                    </svg>
+                                    Stop Preview
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative aspect-[16/9] bg-gray-900">
+                        <div id="previewPlaceholder"
+                            class="absolute inset-0 flex items-center justify-center text-gray-400">
+                            <div class="text-center">
+                                <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                <p class="mt-2 text-sm" id="previewPlaceholderText">Select a camera and click "Start
+                                    Preview" to test</p>
+                            </div>
+                        </div>
+                        <video id="previewVideo" class="absolute inset-0 w-full h-full object-cover opacity-0" autoplay
+                            playsinline muted></video>
+                    </div>
+                </div>
+
+                <!-- Webcam Selection -->
+                <div id="webcamConfig" class="{{ 'hidden' if config and config.camera_source == 'cctv' }} space-y-4">
+                    <div>
+                        <label for="webcam_device" class="block text-sm font-medium text-gray-700">Select Webcam</label>
+                        <select id="webcam_device" name="webcam_device"
+                            class="mt-1 block w-full h-10 px-4 py-2.5 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <option value="">Loading cameras...</option>
+                        </select>
+                        <p class="mt-1.5 text-sm text-gray-500">Choose which camera to use for face detection</p>
+                    </div>
+                </div>
+
+                <!-- CCTV Configuration -->
+                <div id="cctvConfig"
+                    class="{{ '' if config and config.camera_source == 'cctv' else 'hidden' }} space-y-4">
+                    <div>
+                        <label for="rtsp_url" class="block text-sm font-medium text-gray-700">RTSP URL</label>
+                        <div class="mt-1">
+                            <input type="text" id="rtsp_url" name="rtsp_url"
+                                class="block w-full h-10 px-4 py-2.5 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                placeholder="rtsp://username:password@ip:port/stream"
+                                value="{{ config.rtsp_url if config else '' }}">
+                        </div>
+                        <p class="mt-1.5 text-sm text-gray-500">Enter the RTSP URL of your CCTV camera</p>
+                    </div>
+
+                    <div>
+                        <label for="cctv_username" class="block text-sm font-medium text-gray-700">Username</label>
+                        <input type="text" id="cctv_username" name="cctv_username"
+                            class="mt-1 block w-full h-10 px-4 py-2.5 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            value="{{ config.cctv_username if config else '' }}">
+                    </div>
+
+                    <div>
+                        <label for="cctv_password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <input type="password" id="cctv_password" name="cctv_password"
+                            class="mt-1 block w-full h-10 px-4 py-2.5 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            value="{{ config.cctv_password if config else '' }}">
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="flex justify-end pt-4 border-t border-gray-200">
+                    <button type="button" id="saveCameraConfig"
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        </svg>
+                        Save and Set Active
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Time Configuration Handler
+    document.getElementById('saveTimeConfig').addEventListener('click', async function () {
+        const checkInTime = document.getElementById('check_in_time').value;
+        const checkOutTime = document.getElementById('check_out_time').value;
+
+        try {
+            const response = await fetch('/api/config/time', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    check_in_time: checkInTime,
+                    check_out_time: checkOutTime
+                })
+            });
+
+            if (response.ok) {
+                alert('Time configuration saved successfully!');
+            } else {
+                alert('Failed to save time configuration. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while saving the configuration.');
+        }
+    });
+
+    // Face Recognition Configuration Handler
+    document.getElementById('saveFaceConfig').addEventListener('click', async function () {
+        const confidenceThreshold = document.getElementById('confidence_threshold').value;
+        const detectionInterval = document.getElementById('detection_interval').value;
+
+        try {
+            const response = await fetch('/api/config/face', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    confidence_threshold: parseInt(confidenceThreshold),
+                    detection_interval: parseInt(detectionInterval)
+                })
+            });
+
+            if (response.ok) {
+                alert('Face recognition settings saved successfully!');
+            } else {
+                alert('Failed to save face recognition settings. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while saving the configuration.');
+        }
+    });
+
+    let previewStream = null;
+    const startPreviewBtn = document.getElementById('startPreview');
+    const stopPreviewBtn = document.getElementById('stopPreview');
+    const previewVideo = document.getElementById('previewVideo');
+    const previewPlaceholder = document.getElementById('previewPlaceholder');
+    const cameraSourceInputs = document.querySelectorAll('input[name="camera_source"]');
+    const cctvConfig = document.getElementById('cctvConfig');
+    const webcamConfig = document.getElementById('webcamConfig');
+
+    async function requestCameraPermission() {
+        const select = document.getElementById('webcam_device');
+        select.innerHTML = '<option value="">Loading cameras...</option>';
+
+        try {
+            // First enumerate devices to check if we have labels
+            let devices = await navigator.mediaDevices.enumerateDevices();
+            let videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+            // If we don't have labels, we need to request camera access
+            if (videoDevices.length > 0 && !videoDevices[0].label) {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+                // Stop the test stream immediately
+                stream.getTracks().forEach(track => track.stop());
+
+                // Re-enumerate devices after getting permission
+                devices = await navigator.mediaDevices.enumerateDevices();
+                videoDevices = devices.filter(device => device.kind === 'videoinput');
+            }
+
+            if (videoDevices.length === 0) {
+                select.innerHTML = '<option value="">No cameras found</option>';
+                showToast('No cameras were detected on your device', 'error');
+                return;
+            }
+
+            // Add a default option
+            select.innerHTML = '<option value="">-- Select a camera --</option>';
+
+            videoDevices.forEach((device, index) => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                option.text = device.label || `Camera ${index + 1}`;
+                select.appendChild(option);
+            });
+
+            // Set the currently active camera if available
+            const activeCamera = '{{ config.active_camera_id if config and config.active_camera_id else "" }}';
+            if (activeCamera && select.querySelector(`option[value="${activeCamera}"]`)) {
+                select.value = activeCamera;
+            }
+
+            showToast('Camera list loaded successfully', 'success');
+        } catch (error) {
+            console.error('Error requesting camera permission:', error);
+            let errorMessage = 'Failed to access camera. ';
+
+            if (error.name === 'NotAllowedError') {
+                errorMessage += 'Please allow camera access in your browser settings.';
+                select.innerHTML = '<option value="">Camera access denied</option>';
+            } else if (error.name === 'NotFoundError') {
+                errorMessage += 'No camera devices found.';
+                select.innerHTML = '<option value="">No cameras available</option>';
+            } else if (error.name === 'NotReadableError') {
+                errorMessage += 'Camera is in use by another application.';
+                select.innerHTML = '<option value="">Camera is in use</option>';
+            } else {
+                errorMessage += 'Please check your camera permissions and connections.';
+                select.innerHTML = '<option value="">Error loading cameras</option>';
+            }
+
+            showToast(errorMessage, 'error');
+        }
+    }
+
+    // Camera source change handler
+    cameraSourceInputs.forEach(input => {
+        input.addEventListener('change', async function () {
+            stopPreviewStream();
+            const placeholderText = document.getElementById('previewPlaceholderText');
+            if (this.value === 'cctv') {
+                cctvConfig.classList.remove('hidden');
+                webcamConfig.classList.add('hidden');
+                placeholderText.textContent = 'Enter RTSP URL and click "Start Preview" to test';
+            } else {
+                cctvConfig.classList.add('hidden');
+                webcamConfig.classList.remove('hidden');
+                placeholderText.textContent = 'Loading cameras...';
+                await requestCameraPermission();
+                placeholderText.textContent = 'Select a camera and click "Start Preview" to test';
+            }
+        });
+    });
+
+    // Initialize camera list on page load
+    window.addEventListener('DOMContentLoaded', () => {
+        // Request camera permissions immediately if webcam is selected
+        const initialCameraSource = document.querySelector('input[name="camera_source"]:checked');
+        if (initialCameraSource && initialCameraSource.value === 'webcam') {
+            // Add a small delay to ensure DOM is fully loaded
+            setTimeout(() => {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(stream => {
+                        stream.getTracks().forEach(track => track.stop());
+                        requestCameraPermission();
+                    })
+                    .catch(error => {
+                        console.error('Initial camera permission error:', error);
+                        const select = document.getElementById('webcam_device');
+                        select.innerHTML = '<option value="">Camera access denied</option>';
+                        showToast('Please allow camera access in your browser settings', 'error');
+                    });
+            }, 100);
+        }
+    });
+
+    async function startPreview() {
+        const startBtn = document.getElementById('startPreview');
+        const previewIcon = startBtn.querySelector('.preview-icon');
+        const previewLoading = startBtn.querySelector('.preview-loading');
+        const previewText = startBtn.querySelector('.preview-text');
+
+        try {
+            if (previewStream) {
+                stopPreviewStream();
+            }
+
+            // Show loading state
+            startBtn.disabled = true;
+            previewIcon.classList.add('hidden');
+            previewLoading.classList.remove('hidden');
+            previewText.textContent = 'Starting...';
+
+            const cameraSource = document.querySelector('input[name="camera_source"]:checked').value;
+
+            if (cameraSource === 'webcam') {
+                const deviceId = document.getElementById('webcam_device').value;
+                if (!deviceId) {
+                    showToast('Please select a camera first', 'error');
+                    return;
+                }
+
+                try {
+                    previewStream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            deviceId: { exact: deviceId },
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 }
+                        }
+                    });
+
+                    previewVideo.srcObject = previewStream;
+                    await previewVideo.play();
+
+                    previewVideo.classList.remove('opacity-0');
+                    previewVideo.classList.add('opacity-100');
+                    previewPlaceholder.classList.add('hidden');
+                    startPreviewBtn.classList.add('hidden');
+                    stopPreviewBtn.classList.remove('hidden');
+                } catch (err) {
+                    console.error('Error accessing camera:', err);
+                    showToast(`Camera error: ${err.message}`, 'error');
+                    stopPreviewStream();
+                }
+            } else {
+                const rtspUrl = document.getElementById('rtsp_url').value;
+                if (!rtspUrl) {
+                    showToast('Please enter RTSP URL', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/config/camera/preview', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            rtsp_url: rtspUrl,
+                            username: document.getElementById('cctv_username').value,
+                            password: document.getElementById('cctv_password').value
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to connect to CCTV camera');
+                    }
+
+                    showToast('CCTV preview will be implemented soon', 'info');
+                } catch (err) {
+                    console.error('CCTV error:', err);
+                    showToast(`CCTV error: ${err.message}`, 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Error starting preview:', error);
+            showToast('Failed to start camera preview. Please check your settings and permissions.', 'error');
+            stopPreviewStream();
+        } finally {
+            // Reset button state
+            startBtn.disabled = false;
+            previewIcon.classList.remove('hidden');
+            previewLoading.classList.add('hidden');
+            previewText.textContent = 'Start Preview';
+        }
+    }
+
+    function stopPreviewStream() {
+        if (previewStream) {
+            previewStream.getTracks().forEach(track => track.stop());
+            previewStream = null;
+            previewVideo.srcObject = null;
+            previewVideo.classList.remove('opacity-100');
+            previewVideo.classList.add('opacity-0');
+            previewPlaceholder.classList.remove('hidden');
+            startPreviewBtn.classList.remove('hidden');
+            stopPreviewBtn.classList.add('hidden');
+        }
+    }
+
+    // Event listeners
+    startPreviewBtn.addEventListener('click', startPreview);
+    stopPreviewBtn.addEventListener('click', stopPreviewStream);
+
+    // Save camera configuration
+    document.getElementById('saveCameraConfig').addEventListener('click', async function () {
+        try {
+            // Stop preview before saving
+            stopPreviewStream();
+
+            const cameraSource = document.querySelector('input[name="camera_source"]:checked').value;
+            const config = {
+                camera_source: cameraSource,
+                active_camera_id: document.getElementById('webcam_device').value || '',
+                rtsp_url: document.getElementById('rtsp_url').value || '',
+                cctv_username: document.getElementById('cctv_username').value || '',
+                cctv_password: document.getElementById('cctv_password').value || ''
+            };
+
+            const response = await fetch('/api/config/camera', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(config)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showToast(data.message || 'Camera settings saved successfully', 'success');
+            } else {
+                throw new Error(data.error || 'Failed to save camera configuration');
+            }
+        } catch (error) {
+            console.error('Error saving camera config:', error);
+            showToast(error.message || 'Failed to save camera settings. Please try again.', 'error');
+        }
+    });
+
+    // Helper function for showing toasts
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 ease-in-out ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+            } text-white`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', () => {
+        stopPreviewStream();
+    });
+</script>
+{% endblock %}

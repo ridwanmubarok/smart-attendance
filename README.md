@@ -1,109 +1,118 @@
-# Sistem Absensi dengan Pendeteksi Wajah (DETR)
+# Smart Attendance System
 
-Sistem absensi otomatis menggunakan teknologi pengenalan wajah berbasis web dengan Flask dan DETR (Detection Transformer).
+A modern face detection and recognition system built with Flask, OpenCV, and deep learning models.
 
-## Fitur Utama
+## Features
 
-- Pengenalan wajah otomatis untuk absensi (check-in/check-out) menggunakan DETR
-- Pendaftaran karyawan dengan pengenalan wajah
-- Laporan absensi dengan filter dan ekspor ke Excel
-- Dukungan untuk berbagai sumber kamera (webcam, IP camera, file video)
-- Pengaturan sistem yang mudah dikonfigurasi
-- Dukungan untuk komputasi GPU (CUDA) dan CPU
+- Upload and process images for face detection
+- Real-time face detection using webcam
+- Face recognition and matching against stored faces
+- Modern and responsive UI
+- Easy to use interface
 
-## Teknologi
+## Prerequisites
 
-- Python 3.8+
-- Flask
-- PyTorch
-- DETR (Detection Transformer)
-- OpenCV
-- SQLite
-- Bootstrap 5
+- Python 3.8 or higher
+- pip (Python package manager)
+- Webcam (for live detection)
 
-## Cara Instalasi
+## Installation
 
-### Instalasi dependency
+1. Clone the repository:
 
 ```bash
-# Buat virtual environment
+git clone https://github.com/yourusername/smart-attendance.git
+cd smart-attendance
+```
+
+2. Create and activate a virtual environment:
+
+```bash
 python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 
-# Aktifkan virtual environment
-# Windows
-venv\Scripts\activate
-# Linux/Mac
-source venv/bin/activate
+3. Install the required packages:
 
-# Install dependency
+```bash
 pip install -r requirements.txt
 ```
 
-### Penggunaan GPU (Opsional)
-
-Untuk performa yang lebih baik, sistem ini mendukung akselerasi GPU dengan CUDA. Pastikan Anda telah menginstal driver NVIDIA dan CUDA sebelum menggunakan mode GPU.
-
-1. Instal CUDA Toolkit dari [situs resmi NVIDIA](https://developer.nvidia.com/cuda-downloads)
-2. Verifikasi instalasi CUDA dengan perintah:
-   ```bash
-   nvidia-smi
-   ```
-3. Pilih 'CUDA' sebagai device di pengaturan aplikasi
-
-## Cara Menjalankan
+4. Set up the environment variables (optional):
 
 ```bash
-# Setelah mengaktifkan virtual environment
+cp .env.example .env
+# Edit .env file with your configuration
+```
+
+## Running the Application
+
+1. Initialize the database:
+
+```bash
+flask db init
+flask db migrate
+flask db upgrade
+```
+
+2. Start the Flask development server:
+
+```bash
 python app.py
 ```
 
-Atau dengan menjalankan script helper:
-```bash
-python run.py
-```
-
-Kemudian buka browser dan akses `http://localhost:5000`
-
-## Struktur Proyek
+3. Open your web browser and navigate to:
 
 ```
-├── app.py                  # Aplikasi utama Flask
-├── camera.py               # Modul pengelolaan kamera
-├── database.py             # Modul database
-├── detr_utils.py           # Utilitas DETR untuk pengenalan wajah
-├── run.py                  # Script bantuan untuk menjalankan aplikasi
-├── requirements.txt        # Daftar dependency
-├── static/                 # Aset statis (CSS, JS, dll)
-├── templates/              # Template HTML
-│   ├── base.html           # Template dasar
-│   ├── index.html          # Halaman absensi
-│   ├── enrollment.html     # Halaman pendaftaran
-│   ├── reports.html        # Halaman laporan
-│   └── settings.html       # Halaman pengaturan
-├── data/                   # Direktori penyimpanan data
-│   ├── database.db         # Database SQLite
-│   ├── faces/              # Penyimpanan data wajah
-│   └── logs/               # Log aplikasi
-└── utils/                  # Utilitas tambahan
-    ├── config.py           # Pengaturan konfigurasi
-    └── logger.py           # Pengaturan logging
+http://localhost:5000
 ```
 
-## Penjelasan DETR
+## Usage
 
-DETR (DEtection TRansformer) adalah model deteksi objek berbasis transformer yang dikembangkan oleh Facebook AI Research. Beberapa keunggulan DETR dibandingkan dengan metode tradisional:
+1. **Upload Image**
 
-1. **End-to-end training:** DETR tidak memerlukan aturan post-processing yang rumit seperti Non-Maximum Suppression (NMS).
-2. **Arsitektur berbasis transformer:** Menggunakan self-attention yang efektif untuk memahami konteks global dalam gambar.
-3. **Kemampuan generalisasi yang baik:** Dapat mendeteksi objek dalam berbagai posisi dan pencahayaan.
-4. **Dukungan GPU:** Dapat memanfaatkan akselerasi GPU untuk inferensi yang lebih cepat.
+   - Click on "Upload Image" in the navigation
+   - Select an image file
+   - Click "Upload" to process the image
+   - View detection results
 
-Pada sistem ini, DETR digunakan untuk mendeteksi orang dalam frame, kemudian bagian atas tubuh (diasumsikan sebagai wajah) diekstrak dan digunakan untuk pengenalan.
+2. **Live Detection**
 
-## Konfigurasi
+   - Click on "Live Detection" in the navigation
+   - Grant camera permissions when prompted
+   - Click "Start Camera" to begin detection
+   - View real-time detection results
 
-Aplikasi akan secara otomatis membuat direktori yang diperlukan saat dijalankan pertama kali. Pengaturan tambahan dapat dikonfigurasi melalui antarmuka pengaturan.
+3. **Upload Face**
+   - Click on "Upload Face" in the navigation
+   - Enter the person's name
+   - Upload a clear front-facing photo
+   - The face will be added to the recognition database
 
-## Lisensi
+## Project Structure
 
-Hak Cipta (c) 2023. Semua hak dilindungi undang-undang. 
+```
+smart-attendance/
+├── app.py              # Main Flask application
+├── models.py           # Database models
+├── routes.py           # Application routes
+├── requirements.txt    # Python dependencies
+├── templates/          # HTML templates
+│   ├── base.html
+│   ├── index.html
+│   ├── upload.html
+│   ├── result.html
+│   ├── live.html
+│   └── upload_face.html
+├── media/             # Uploaded images
+│   └── faces/        # Stored face images
+└── instance/         # SQLite database
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

@@ -1,372 +1,144 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-gray-100">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Sistem Absensi Berbasis Pengenalan Wajah{% endblock %}</title>
-    
-    <!-- Tailwind CSS via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Configure Tailwind theme -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            200: '#bae6fd',
-                            300: '#7dd3fc',
-                            400: '#38bdf8',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                            800: '#075985',
-                            900: '#0c4a6e',
-                        },
-                        secondary: {
-                            50: '#f8fafc',
-                            100: '#f1f5f9',
-                            200: '#e2e8f0',
-                            300: '#cbd5e1',
-                            400: '#94a3b8',
-                            500: '#64748b',
-                            600: '#475569',
-                            700: '#334155',
-                            800: '#1e293b',
-                            900: '#0f172a',
-                        },
-                        accent: {
-                            400: '#8b5cf6',
-                            500: '#7c3aed',
-                            600: '#6d28d9',
-                        }
-                    },
-                }
-            }
-        }
-    </script>
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
-    <!-- Custom Styles -->
+    <title>{% block title %}Smart Attendance System{% endblock %}</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <!-- Add modern fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <!-- Add custom styles -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
         body {
             font-family: 'Inter', sans-serif;
         }
-        
-        .glassmorphism {
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-        }
-        
-        .gradient-background {
-            background: linear-gradient(135deg, #000428 0%, #004e92 100%);
-        }
-        
-        .gradient-text {
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            background-image: linear-gradient(90deg, #7928CA, #FF0080);
-        }
-        
-        /* Animated background */
-        .area {
-            background: #111827;
-            width: 100%;
-            height: 100vh;
-            position: fixed;
-            z-index: -1;
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
-        .circles {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
+        .content-card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(0, 0, 0, 0.1);
         }
 
-        .circles li {
-            position: absolute;
-            display: block;
-            list-style: none;
-            width: 20px;
-            height: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            animation: animate 25s linear infinite;
-            bottom: -150px;
+        .nav-item {
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
-        .circles li:nth-child(1) {
-            left: 25%;
-            width: 80px;
-            height: 80px;
-            animation-delay: 0s;
+        .nav-item:hover {
+            transform: translateY(-2px);
+            background: #2563eb;
+            color: white;
         }
 
-        .circles li:nth-child(2) {
-            left: 10%;
-            width: 20px;
-            height: 20px;
-            animation-delay: 2s;
-            animation-duration: 12s;
+        .nav-item.active {
+            background: #2563eb;
+            color: white;
         }
 
-        .circles li:nth-child(3) {
-            left: 70%;
-            width: 20px;
-            height: 20px;
-            animation-delay: 4s;
-        }
-
-        .circles li:nth-child(4) {
-            left: 40%;
-            width: 60px;
-            height: 60px;
-            animation-delay: 0s;
-            animation-duration: 18s;
-        }
-
-        .circles li:nth-child(5) {
-            left: 65%;
-            width: 20px;
-            height: 20px;
-            animation-delay: 0s;
-        }
-
-        .circles li:nth-child(6) {
-            left: 75%;
-            width: 110px;
-            height: 110px;
-            animation-delay: 3s;
-        }
-
-        .circles li:nth-child(7) {
-            left: 35%;
-            width: 150px;
-            height: 150px;
-            animation-delay: 7s;
-        }
-
-        .circles li:nth-child(8) {
-            left: 50%;
-            width: 25px;
-            height: 25px;
-            animation-delay: 15s;
-            animation-duration: 45s;
-        }
-
-        .circles li:nth-child(9) {
-            left: 20%;
-            width: 15px;
-            height: 15px;
-            animation-delay: 2s;
-            animation-duration: 35s;
-        }
-
-        .circles li:nth-child(10) {
-            left: 85%;
-            width: 150px;
-            height: 150px;
-            animation-delay: 0s;
-            animation-duration: 11s;
-        }
-
-        @keyframes animate {
-            0% {
-                transform: translateY(0) rotate(0deg);
-                opacity: 1;
-                border-radius: 0;
-            }
-            100% {
-                transform: translateY(-1000px) rotate(720deg);
-                opacity: 0;
-                border-radius: 50%;
-            }
+        .page-gradient {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
         }
     </style>
-    
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen">
-    <!-- Animated background -->
-    <div class="area">
-        <ul class="circles">
-            <li></li>
-            <li></li>
-            <li></li>
-            <li></li>
-            <li></li>
-            <li></li>
-            <li></li>
-            <li></li>
-            <li></li>
-            <li></li>
-        </ul>
+
+<body class="h-full page-gradient">
+    <div class="min-h-full">
+        <!-- Navigation -->
+        <nav class="glass-effect fixed w-full z-50">
+            <div class="mx-auto px-6">
+                <div class="flex h-16 items-center justify-between">
+                    <!-- Logo -->
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <span class="text-2xl font-bold text-blue-600">Smart<span
+                                    class="text-gray-800">Attendance</span></span>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Items -->
+                    <div class="hidden md:block">
+                        <div class="flex items-center space-x-4">
+                            <a href="{{ url_for('index') }}" class="nav-item px-4 py-2 rounded-lg text-gray-700 hover:text-white
+                                      {% if request.endpoint == 'index' %}active{% endif %}">
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                    </svg>
+                                    <span>Dashboard</span>
+                                </div>
+                            </a>
+
+                            <a href="{{ url_for('employees') }}" class="nav-item px-4 py-2 rounded-lg text-gray-700 hover:text-white
+                                      {% if request.endpoint == 'employees' %}active{% endif %}">
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                    <span>Employees</span>
+                                </div>
+                            </a>
+
+                            <a href="{{ url_for('live_detection') }}" class="nav-item px-4 py-2 rounded-lg text-gray-700 hover:text-white
+                                      {% if request.endpoint == 'live_detection' %}active{% endif %}">
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                    <span>Live Detection</span>
+                                </div>
+                            </a>
+
+                            <a href="{{ url_for('attendance_report') }}" class="nav-item px-4 py-2 rounded-lg text-gray-700 hover:text-white
+                                      {% if request.endpoint == 'attendance_report' %}active{% endif %}">
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <span>Reports</span>
+                                </div>
+                            </a>
+
+                            <a href="{{ url_for('config_page') }}" class="nav-item px-4 py-2 rounded-lg text-gray-700 hover:text-white
+                                      {% if request.endpoint == 'config_page' %}active{% endif %}">
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span>Settings</span>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="pt-16">
+            <div class="mx-auto px-6 py-6">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
     </div>
 
-    <!-- Sidebar -->
-    <div class="flex h-screen overflow-hidden">
-        <div class="hidden md:flex md:flex-shrink-0">
-            <div class="flex flex-col w-64 border-r border-gray-800 bg-gray-900 bg-opacity-90 glassmorphism">
-                <div class="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
-                    <div class="flex items-center flex-shrink-0 px-4 mb-6">
-                        <h1 class="text-xl font-bold gradient-text">
-                            <i class="fas fa-id-card-alt mr-2"></i>Face AI
-                        </h1>
-                    </div>
-                    <nav class="flex-1 px-2 space-y-1 bg-opacity-50">
-                        <a href="{{ url_for('index') }}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if request.path == url_for('index') %}text-white bg-primary-700 {% else %}text-gray-300 hover:bg-primary-700 hover:text-white {% endif %}">
-                            <i class="fas fa-home mr-3 text-lg {% if request.path == url_for('index') %}text-white {% else %}text-gray-400 group-hover:text-white {% endif %}"></i>
-                            Beranda
-                        </a>
-                        
-                        <a href="{{ url_for('enrollment') }}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if request.path == url_for('enrollment') %}text-white bg-primary-700 {% else %}text-gray-300 hover:bg-primary-700 hover:text-white {% endif %}">
-                            <i class="fas fa-user-plus mr-3 text-lg {% if request.path == url_for('enrollment') %}text-white {% else %}text-gray-400 group-hover:text-white {% endif %}"></i>
-                            Pendaftaran
-                        </a>
-                        
-                        <a href="{{ url_for('reports') }}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if request.path == url_for('reports') %}text-white bg-primary-700 {% else %}text-gray-300 hover:bg-primary-700 hover:text-white {% endif %}">
-                            <i class="fas fa-chart-bar mr-3 text-lg {% if request.path == url_for('reports') %}text-white {% else %}text-gray-400 group-hover:text-white {% endif %}"></i>
-                            Laporan
-                        </a>
-                        
-                        <a href="{{ url_for('settings') }}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if request.path == url_for('settings') %}text-white bg-primary-700 {% else %}text-gray-300 hover:bg-primary-700 hover:text-white {% endif %}">
-                            <i class="fas fa-cog mr-3 text-lg {% if request.path == url_for('settings') %}text-white {% else %}text-gray-400 group-hover:text-white {% endif %}"></i>
-                            Pengaturan
-                        </a>
-                    </nav>
-                </div>
-                <div class="flex-shrink-0 flex border-t border-gray-800 p-4">
-                    <div class="flex-shrink-0 w-full group block">
-                        <div class="flex items-center">
-                            <div class="text-sm">
-                                <p class="text-xs text-gray-400">Dibuat dengan 🖤</p>
-                                <p class="font-medium text-gray-300">AI Face Recognition</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Main content -->
-        <div class="flex flex-col w-0 flex-1 overflow-hidden">
-            <!-- Mobile header -->
-            <div class="md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3 flex items-center justify-between border-b border-gray-800 bg-gray-900 glassmorphism">
-                <button class="h-12 w-12 inline-flex items-center justify-center rounded-md text-gray-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" id="mobile-menu-button">
-                    <span class="sr-only">Open sidebar</span>
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
-                <div class="mr-4">
-                    <h1 class="text-xl font-bold gradient-text">
-                        <i class="fas fa-id-card-alt mr-2"></i>Face AI
-                    </h1>
-                </div>
-            </div>
-            
-            <!-- Mobile menu -->
-            <div class="md:hidden fixed inset-0 z-40 hidden" id="mobile-menu">
-                <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" id="mobile-menu-overlay"></div>
-                <div class="fixed inset-y-0 left-0 max-w-xs w-full bg-gray-900 glassmorphism shadow-lg transform transition ease-in-out duration-300 -translate-x-full" id="mobile-menu-content">
-                    <div class="absolute top-0 right-0 -mr-12 pt-2">
-                        <button class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" id="mobile-menu-close">
-                            <span class="sr-only">Close sidebar</span>
-                            <i class="fas fa-times text-white text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-                        <div class="flex-shrink-0 flex items-center px-4 mb-6">
-                            <h1 class="text-xl font-bold gradient-text">
-                                <i class="fas fa-id-card-alt mr-2"></i>Face AI
-                            </h1>
-                        </div>
-                        <nav class="mt-5 px-2 space-y-1">
-                            <a href="{{ url_for('index') }}" class="group flex items-center px-2 py-2 text-base font-medium rounded-md {% if request.path == url_for('index') %}text-white bg-primary-700 {% else %}text-gray-300 hover:bg-primary-700 hover:text-white {% endif %}">
-                                <i class="fas fa-home mr-3 text-lg {% if request.path == url_for('index') %}text-white {% else %}text-gray-400 group-hover:text-white {% endif %}"></i>
-                                Beranda
-                            </a>
-                            
-                            <a href="{{ url_for('enrollment') }}" class="group flex items-center px-2 py-2 text-base font-medium rounded-md {% if request.path == url_for('enrollment') %}text-white bg-primary-700 {% else %}text-gray-300 hover:bg-primary-700 hover:text-white {% endif %}">
-                                <i class="fas fa-user-plus mr-3 text-lg {% if request.path == url_for('enrollment') %}text-white {% else %}text-gray-400 group-hover:text-white {% endif %}"></i>
-                                Pendaftaran
-                            </a>
-                            
-                            <a href="{{ url_for('reports') }}" class="group flex items-center px-2 py-2 text-base font-medium rounded-md {% if request.path == url_for('reports') %}text-white bg-primary-700 {% else %}text-gray-300 hover:bg-primary-700 hover:text-white {% endif %}">
-                                <i class="fas fa-chart-bar mr-3 text-lg {% if request.path == url_for('reports') %}text-white {% else %}text-gray-400 group-hover:text-white {% endif %}"></i>
-                                Laporan
-                            </a>
-                            
-                            <a href="{{ url_for('settings') }}" class="group flex items-center px-2 py-2 text-base font-medium rounded-md {% if request.path == url_for('settings') %}text-white bg-primary-700 {% else %}text-gray-300 hover:bg-primary-700 hover:text-white {% endif %}">
-                                <i class="fas fa-cog mr-3 text-lg {% if request.path == url_for('settings') %}text-white {% else %}text-gray-400 group-hover:text-white {% endif %}"></i>
-                                Pengaturan
-                            </a>
-                        </nav>
-                    </div>
-                </div>
-            </div>
-            
-            <main class="flex-1 relative z-0 overflow-y-auto focus:outline-none">
-                <!-- Flash messages -->
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        <div class="p-4">
-                            {% for category, message in messages %}
-                                {% set alert_color = 'bg-green-100 text-green-800' if category == 'success' else 'bg-red-100 text-red-800' if category == 'danger' else 'bg-blue-100 text-blue-800' if category == 'info' else 'bg-yellow-100 text-yellow-800' %}
-                                <div class="rounded-lg px-4 py-3 mb-2 {{ alert_color }} flex items-center" role="alert">
-                                    <i class="fas {{ 'fa-check-circle' if category == 'success' else 'fa-exclamation-circle' if category == 'danger' else 'fa-info-circle' if category == 'info' else 'fa-exclamation-triangle' }} mr-2"></i>
-                                    <div>{{ message }}</div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                {% endwith %}
-                
-                <div class="py-6">
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-                        <h1 class="text-2xl font-semibold text-white mb-6">
-                            {% block page_title %}{% endblock %}
-                        </h1>
-                    </div>
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-                        {% block content %}{% endblock %}
-                    </div>
-                </div>
-            </main>
-        </div>
-    </div>
-    
-    <!-- Mobile menu JS -->
-    <script>
-        $(document).ready(function() {
-            // Mobile menu toggle
-            $('#mobile-menu-button').click(function() {
-                $('#mobile-menu').removeClass('hidden');
-                $('#mobile-menu-content').removeClass('-translate-x-full');
-            });
-            
-            $('#mobile-menu-close, #mobile-menu-overlay').click(function() {
-                $('#mobile-menu-content').addClass('-translate-x-full');
-                setTimeout(function() {
-                    $('#mobile-menu').addClass('hidden');
-                }, 300);
-            });
-        });
-    </script>
-    
     {% block extra_js %}{% endblock %}
 </body>
-</html> 
+
+</html>
