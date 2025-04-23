@@ -170,17 +170,27 @@ http://localhost:5000
 
 ```
 smart-attendance/
-├── app/
-│   ├── ai/
-│   │   ├── detr/           # DETR model implementation
-│   │   │   └── utils/         # AI utilities
-│   │   └── sensors/       # Additional sensor support
-│   ├── models/           # Database models
-│   ├── templates/        # HTML templates
-│   └── static/          # Static assets
-├── config/             # Configuration files
-├── tests/             # Unit tests
-└── docs/              # Documentation
+├── app.py              # Main application file
+├── routes.py           # Application routes and views
+├── models.py           # Database models
+├── templates/          # HTML templates
+│   ├── base.html          # Base template
+│   ├── index.html         # Home page
+│   ├── live.html          # Live detection page
+│   ├── config.html        # Configuration page
+│   ├── employees.html     # Employee management
+│   ├── employee_detail.html
+│   ├── upload_face.html   # Face registration
+│   ├── view_employee.html
+│   ├── attendance_report.html
+│   ├── result.html
+│   └── upload.html
+├── media/             # Media storage
+│   └── faces/         # Stored face images
+├── migrations/        # Database migrations
+├── instance/         # Instance-specific files
+├── requirements.txt  # Python dependencies
+└── venv/            # Virtual environment
 ```
 
 ## Performance Optimization
