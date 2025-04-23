@@ -212,17 +212,9 @@ This project was developed as an academic project for the Internet of Things cou
 ### Team 3 Members
 
 - **Akmal Fauzy**
-  - Project Lead
-  - AI Implementation
 - **Faisal Dzulfikar**
-  - IoT Integration
-  - System Architecture
 - **Heru Saputra**
-  - Frontend Development
-  - UI/UX Design
 - **Ridwan Mubarok**
-  - Backend Development
-  - Database Management
 
 ## Acknowledgments
 
