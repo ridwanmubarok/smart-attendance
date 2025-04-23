@@ -47,14 +47,10 @@ venv.bak/
 */.ipynb_checkpoints/*
 
 # Flask
-instance/
+instance/*
+!instance/face_detection.db
 .webassets-cache
 flask_session/
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
 
 # Media and Uploads
 media/uploads/*.jpg
