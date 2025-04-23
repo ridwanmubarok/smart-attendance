@@ -180,11 +180,8 @@ smart-attendance/
 │   ├── config.html        # Configuration page
 │   ├── employees.html     # Employee management
 │   ├── employee_detail.html
-│   ├── upload_face.html   # Face registration
 │   ├── view_employee.html
 │   ├── attendance_report.html
-│   ├── result.html
-│   └── upload.html
 ├── media/             # Media storage
 │   └── faces/         # Stored face images
 ├── migrations/        # Database migrations
