@@ -223,6 +223,10 @@ This project was developed as an academic project for the Internet of Things cou
 - **Heru Saputra**
 - **Ridwan Mubarok**
 
+### Screenshot
+<img width="1680" alt="Screenshot 2025-04-23 at 17 04 23" src="https://github.com/user-attachments/assets/55406040-43cf-4cb5-8c55-f21bcf64606d" />
+<img width="1680" alt="Screenshot 2025-04-23 at 17 04 50" src="https://github.com/user-attachments/assets/230158f4-3518-4831-b428-d9f41cbac2ec" />
+
 ## Acknowledgments
 
 - DETR: Facebook AI Research
