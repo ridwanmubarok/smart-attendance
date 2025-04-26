@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Face Data - {{ employee.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-gray-900">Upload Face Data</h1>
+            <a href="{{ url_for('view_employee', employee_id=employee.id) }}"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Employee
+            </a>
+        </div>
+        <p class="mt-2 text-sm text-gray-500">Upload facial images for {{ employee.name }}</p>
+    </div>
+
+    <div class="bg-white shadow-sm ring-1 ring-gray-100 rounded-lg overflow-hidden">
+        <div class="px-4 py-5 sm:p-6">
+            {% if error %}
+            <div class="rounded-md bg-red-50 p-4 mb-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                            fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">Error</h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <p>{{ error }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <form id="uploadForm" action="{{ url_for('upload_employee_face', employee_id=employee.id) }}" method="post" 
+                enctype="multipart/form-data" class="space-y-6">
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Upload Face Images</label>
+                    <div class="flex flex-col items-center justify-center w-full">
+                        <label for="dropzone-file" 
+                            class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 relative">
+                            <div id="dropzone-content" class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <p class="mb-2 text-sm text-gray-500 text-center">
+                                    <span class="font-semibold">Click to upload</span> or drag and drop
+                                </p>
+                                <p class="text-xs text-gray-500 text-center">
+                                    PNG, JPG, JPEG (MAX. 16MB)
+                                </p>
+                                <p class="text-xs text-gray-500 text-center mt-1">
+                                    You can upload multiple images at once
+                                </p>
+                            </div>
+                            <div id="preview-container" class="hidden w-full h-full p-4 overflow-auto">
+                                <div id="preview-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                    <!-- Preview images will be inserted here dynamically -->
+                                </div>
+                            </div>
+                            <input type="file" id="dropzone-file" name="image" class="hidden" multiple accept="image/*"/>
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-500">
+                        * Make sure the face is clearly visible and well-lit for optimal recognition.
+                    </p>
+                    <p class="text-xs text-gray-500">
+                        * Images where faces cannot be detected will be automatically discarded.
+                    </p>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <button type="button" id="clear-files" 
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Clear All
+                    </button>
+                    <button type="submit" 
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Get elements
+    const dropzone = document.getElementById('dropzone-file');
+    const dropzoneLabel = dropzone.parentElement;
+    const dropzoneContent = document.getElementById('dropzone-content');
+    const previewContainer = document.getElementById('preview-container');
+    const previewGrid = document.getElementById('preview-grid');
+    const clearFilesBtn = document.getElementById('clear-files');
+    
+    // File counter
+    let fileCount = 0;
+    
+    // Handle file selection
+    dropzone.addEventListener('change', handleFiles);
+    
+    // Drag and drop functionality
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropzoneLabel.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropzoneLabel.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropzoneLabel.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+        dropzoneLabel.classList.add('border-blue-500', 'bg-blue-50');
+    }
+    
+    function unhighlight() {
+        dropzoneLabel.classList.remove('border-blue-500', 'bg-blue-50');
+    }
+    
+    // Handle drop event
+    dropzoneLabel.addEventListener('drop', function(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        handleFiles({ target: { files: files } });
+    });
+    
+    // Handle file selection and preview
+    function handleFiles(e) {
+        const files = e.target.files;
+        
+        if (files.length > 0) {
+            // Show preview container, hide dropzone content
+            previewContainer.classList.remove('hidden');
+            dropzoneContent.classList.add('hidden');
+            
+            // Clear previous previews if first selection
+            if (fileCount === 0) {
+                previewGrid.innerHTML = '';
+            }
+            
+            // Process each file
+            Array.from(files).forEach(file => {
+                if (!file.type.match('image.*')) return;
+                
+                fileCount++;
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'relative group';
+                    
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = file.name;
+                    img.className = 'w-full h-32 object-cover rounded-lg';
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.type = 'button';
+                    deleteBtn.className = 'absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-700 transition-opacity';
+                    deleteBtn.innerHTML = '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
+                    deleteBtn.title = 'Remove image';
+                    
+                    // Add delete functionality to individual images
+                    deleteBtn.addEventListener('click', function() {
+                        previewItem.remove();
+                        fileCount--;
+                        
+                        // Update UI if no files left
+                        if (fileCount === 0) {
+                            resetDropzone();
+                        }
+                    });
+                    
+                    // Add elements to preview
+                    previewItem.appendChild(img);
+                    previewItem.appendChild(deleteBtn);
+                    previewGrid.appendChild(previewItem);
+                };
+                
+                reader.readAsDataURL(file);
+            });
+        }
+    }
+    
+    // Clear all files
+    clearFilesBtn.addEventListener('click', function() {
+        resetDropzone();
+        
+        // Clear the file input
+        dropzone.value = '';
+        fileCount = 0;
+    });
+    
+    function resetDropzone() {
+        // Hide preview container, show dropzone content
+        previewContainer.classList.add('hidden');
+        dropzoneContent.classList.remove('hidden');
+        
+        // Clear previews
+        previewGrid.innerHTML = '';
+    }
+</script>
+{% endblock %}
