@@ -41,8 +41,39 @@ def index():
 
 @app.route('/employees')
 def employees():
-    employees_list = Employee.query.all()
-    return render_template('employees.html', employees=employees_list)
+    # Get page number from request, default to 1
+    page = request.args.get('page', 1, type=int)
+    
+    # Get records per page, default to 10
+    per_page = request.args.get('per_page', 10, type=int)
+    
+    # Limit per_page to reasonable values
+    if per_page > 100:
+        per_page = 100
+    # Ensure per_page is at least 1
+    if per_page < 1:
+        per_page = 1
+    
+    # Get paginated results
+    pagination = Employee.query.order_by(Employee.name).paginate(page=page, per_page=per_page, error_out=False)
+    employees_list = pagination.items
+    
+    # Get total records
+    total_records = Employee.query.count()
+    
+    # Calculate page ranges for larger datasets
+    page_range = 5  # Show 5 pages before and after current page
+    start_page = max(1, page - page_range)
+    end_page = min(pagination.pages, page + page_range)
+    
+    return render_template('employees.html', 
+                          employees=employees_list,
+                          pagination=pagination,
+                          total_records=total_records,
+                          page=page,
+                          per_page=per_page,
+                          start_page=start_page,
+                          end_page=end_page)
 
 @app.route('/employees/add', methods=['POST'])
 def add_employee():
