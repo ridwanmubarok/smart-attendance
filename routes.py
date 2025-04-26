@@ -128,7 +128,15 @@ def attendance_report():
     
     # Get page number from request, default to 1
     page = request.args.get('page', 1, type=int)
-    per_page = 10  # Number of records per page
+    
+    # Get records per page, default to 10 but allow users to choose
+    per_page = request.args.get('per_page', 10, type=int)
+    # Limit per_page to reasonable max value only
+    if per_page > 100:
+        per_page = 100
+    # Ensure per_page is at least 1
+    if per_page < 1:
+        per_page = 1
     
     query = Attendance.query.join(Employee)
     
@@ -152,11 +160,20 @@ def attendance_report():
     # Get unique departments for filter
     departments = db.session.query(Employee.department).distinct().all()
     
+    # Calculate page ranges for larger datasets
+    page_range = 5  # Show 5 pages before and after current page
+    start_page = max(1, page - page_range)
+    end_page = min(pagination.pages, page + page_range)
+    
     return render_template('attendance_report.html',
                          attendance_records=attendance_records,
                          pagination=pagination,
                          total_records=total_records,
-                         departments=[d[0] for d in departments if d[0]])
+                         departments=[d[0] for d in departments if d[0]],
+                         page=page,
+                         per_page=per_page,
+                         start_page=start_page,
+                         end_page=end_page)
 
 @app.route('/process_frame', methods=['POST'])
 def process_frame():
@@ -552,4 +569,4 @@ def get_config():
             'check_out_time': config.check_out_time.strftime('%H:%M')
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500 
+        return jsonify({'error': str(e)}), 500
