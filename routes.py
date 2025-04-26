@@ -143,7 +143,10 @@ def upload_employee_face(employee_id):
         
         if success_count > 0:
             db.session.commit()
-            return redirect(url_for('view_employee', employee_id=employee.id))
+            # Return with success message for toast
+            return redirect(url_for('view_employee', employee_id=employee.id, 
+                                   upload_status='success', 
+                                   count=success_count))
         else:
             return render_template('upload_face.html', error='No valid faces detected in the uploaded images', employee=employee)
     

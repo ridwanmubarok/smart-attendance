@@ -252,6 +252,97 @@
 
 {% block extra_js %}
 <script>
+    // Check for upload status in URL parameters and show toast if needed
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const uploadStatus = urlParams.get('upload_status');
+        const count = urlParams.get('count');
+        
+        if (uploadStatus === 'success') {
+            const message = count === '1' 
+                ? '1 face image successfully uploaded!' 
+                : `${count} face images successfully uploaded!`;
+            showToast(message, 'success');
+            
+            // Clean URL parameters without refreshing the page
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }
+    });
+    
+    // Toast notification function
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        
+        // Set toast style based on type
+        if (type === 'success') {
+            toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up';
+        } else if (type === 'error') {
+            toast.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up';
+        } else {
+            toast.className = 'fixed bottom-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up';
+        }
+        
+        toast.innerHTML = `
+            <div class="flex items-center">
+                <div class="mr-2">
+                    ${type === 'success' 
+                        ? '<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>'
+                        : type === 'error'
+                            ? '<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>'
+                            : '<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
+                    }
+                </div>
+                <div>${message}</div>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Add animation styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .animate-fade-in-up {
+                animation: fadeInUp 0.3s ease-out forwards;
+            }
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Remove toast after 3 seconds
+        setTimeout(() => {
+            toast.style.animation = 'fadeOut 0.3s ease-out forwards';
+            
+            // Add fade out animation
+            const fadeOutStyle = document.createElement('style');
+            fadeOutStyle.textContent = `
+                @keyframes fadeOut {
+                    from {
+                        opacity: 1;
+                    }
+                    to {
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(fadeOutStyle);
+            
+            // Remove element after animation completes
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 3000);
+    }
+
     let currentEmployeeId = null;
     let currentFaceId = null;
 
@@ -283,11 +374,8 @@
             });
 
             if (response.ok) {
-                // Show success message
-                const toast = document.createElement('div');
-                toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-                toast.textContent = 'Face data deleted successfully!';
-                document.body.appendChild(toast);
+                // Show success message using our toast function
+                showToast('Face data deleted successfully!', 'success');
 
                 // Refresh the page after 1 second
                 setTimeout(() => {
@@ -298,11 +386,8 @@
             }
         } catch (error) {
             console.error('Error:', error);
-            // Show error message
-            const toast = document.createElement('div');
-            toast.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-            toast.textContent = 'Failed to delete face data. Please try again.';
-            document.body.appendChild(toast);
+            // Show error message using our toast function
+            showToast('Failed to delete face data. Please try again.', 'error');
         } finally {
             closeDeleteFaceModal();
         }
