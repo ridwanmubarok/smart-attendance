@@ -118,6 +118,44 @@ def upload_employee_face(employee_id):
     
     return render_template('upload_face.html', employee=employee)
 
+@app.route('/employees/<int:employee_id>/face/<int:face_id>/delete', methods=['POST'])
+def delete_employee_face(employee_id, face_id):
+    try:
+        # Find the face data by ID
+        face_data = FaceData.query.get_or_404(face_id)
+        
+        # Verify that the face belongs to the correct employee
+        if face_data.employee_id != employee_id:
+            return jsonify({'error': 'Face data does not belong to this employee'}), 403
+        
+        # Get the image filename before deleting the record
+        image_filename = face_data.image
+        
+        # Delete the face data record
+        db.session.delete(face_data)
+        db.session.commit()
+        
+        # Delete the actual image file
+        try:
+            image_path = os.path.join(current_app.config['UPLOAD_FOLDER'], image_filename)
+            if os.path.exists(image_path):
+                os.remove(image_path)
+        except Exception as e:
+            # Log the error but don't fail if file deletion fails
+            print(f"Error removing file: {str(e)}")
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Face data deleted successfully'
+        }), 200
+    except Exception as e:
+        # Rollback in case of error
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to delete face data: {str(e)}'
+        }), 500
+
 @app.route('/attendance/report')
 def attendance_report():
     start_date = request.args.get('start_date', 
