@@ -570,3 +570,25 @@ def get_config():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/delete_attendance/<int:attendance_id>', methods=['POST'])
+def delete_attendance(attendance_id):
+    try:
+        # Find the attendance record by ID
+        attendance = Attendance.query.get_or_404(attendance_id)
+        
+        # Delete the record
+        db.session.delete(attendance)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Attendance record deleted successfully'
+        }), 200
+    except Exception as e:
+        # Rollback in case of error
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to delete record: {str(e)}'
+        }), 500
