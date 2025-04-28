@@ -66,34 +66,46 @@
                     </div>
 
                     <!-- Upload Form -->
-                    <form action="{{ url_for('upload_employee_face', employee_id=employee.id) }}" method="post"
+                    <form id="uploadForm" action="{{ url_for('upload_employee_face', employee_id=employee.id) }}" method="post" 
                         enctype="multipart/form-data" class="mb-6">
-                        <div class="flex items-center justify-center w-full">
-                            <label for="image"
-                                class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                    <svg class="w-8 h-8 mb-3 text-gray-400" fill="none" viewBox="0 0 24 24"
-                                        stroke="currentColor">
+                        <div class="space-y-2">
+                            <div class="flex flex-col items-center justify-center w-full">
+                                <label for="dropzone-file" 
+                                    class="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 relative">
+                                    <div id="dropzone-content" class="flex flex-col items-center justify-center pt-5 pb-6">
+                                        <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                        </svg>
+                                        <p class="mb-2 text-sm text-gray-500 text-center">
+                                            <span class="font-semibold">Click to upload</span> or drag and drop
+                                        </p>
+                                        <p class="text-xs text-gray-500 text-center">
+                                            PNG, JPG, JPEG (MAX. 16MB)
+                                        </p>
+                                    </div>
+                                    <div id="preview-container" class="hidden w-full h-full p-3 overflow-auto">
+                                        <div id="preview-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                            <!-- Preview images will be inserted here dynamically -->
+                                        </div>
+                                    </div>
+                                    <input type="file" id="dropzone-file" name="image" class="hidden" multiple accept="image/*"/>
+                                </label>
+                            </div>
+                            <div class="flex items-center justify-between mt-4">
+                                <button type="button" id="clear-files" 
+                                    class="text-sm text-gray-600 hover:text-red-500">
+                                    Clear selected files
+                                </button>
+                                <button type="submit" 
+                                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                     </svg>
-                                    <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to
-                                            upload</span> or drag and drop</p>
-                                    <p class="text-xs text-gray-500">PNG, JPG, JPEG (MAX. 800x400px)</p>
-                                </div>
-                                <input type="file" id="image" name="image" class="hidden" accept="image/*" multiple
-                                    required>
-                            </label>
-                        </div>
-                        <div class="mt-4 flex justify-end">
-                            <button type="submit"
-                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                </svg>
-                                Upload Face(s)
-                            </button>
+                                    Upload Face(s)
+                                </button>
+                            </div>
                         </div>
                     </form>
 
@@ -105,6 +117,14 @@
                             <div class="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-200">
                                 <img src="{{ url_for('uploaded_file', filename=face.image) }}" alt="Face Image"
                                     class="object-cover object-center group-hover:opacity-75">
+                                <button onclick="confirmDeleteFace({{ employee.id }}, {{ face.id }})" 
+                                    class="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-700 transition-opacity"
+                                    title="Delete face">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
                             </div>
                             <p class="mt-2 text-xs text-gray-500">Added: {{ face.created_at.strftime('%Y-%m-%d') }}</p>
                         </div>
@@ -195,4 +215,321 @@
         </div>
     </div>
 </div>
+
+<!-- Delete Face Confirmation Modal -->
+<div id="deleteFaceModal" class="fixed inset-0 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-sm mx-auto">
+        <div class="flex items-center mb-4">
+            <div class="flex-shrink-0">
+                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-lg font-medium text-gray-900">Delete Face Data</h3>
+            </div>
+        </div>
+        <div class="mt-2">
+            <p class="text-sm text-gray-500">
+                Are you sure you want to delete this face data? This action cannot be undone and may affect facial recognition for this employee.
+            </p>
+        </div>
+        <div class="mt-4 flex justify-end space-x-3">
+            <button type="button" onclick="closeDeleteFaceModal()"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Cancel
+            </button>
+            <button type="button" id="confirmDeleteFaceBtn"
+                class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Check for upload status in URL parameters and show toast if needed
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const uploadStatus = urlParams.get('upload_status');
+        const count = urlParams.get('count');
+        
+        if (uploadStatus === 'success') {
+            const message = count === '1' 
+                ? '1 face image successfully uploaded!' 
+                : `${count} face images successfully uploaded!`;
+            showToast(message, 'success');
+            
+            // Clean URL parameters without refreshing the page
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }
+    });
+    
+    // Toast notification function
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        
+        // Set toast style based on type
+        if (type === 'success') {
+            toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up';
+        } else if (type === 'error') {
+            toast.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up';
+        } else {
+            toast.className = 'fixed bottom-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up';
+        }
+        
+        toast.innerHTML = `
+            <div class="flex items-center">
+                <div class="mr-2">
+                    ${type === 'success' 
+                        ? '<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>'
+                        : type === 'error'
+                            ? '<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>'
+                            : '<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
+                    }
+                </div>
+                <div>${message}</div>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Add animation styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .animate-fade-in-up {
+                animation: fadeInUp 0.3s ease-out forwards;
+            }
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Remove toast after 3 seconds
+        setTimeout(() => {
+            toast.style.animation = 'fadeOut 0.3s ease-out forwards';
+            
+            // Add fade out animation
+            const fadeOutStyle = document.createElement('style');
+            fadeOutStyle.textContent = `
+                @keyframes fadeOut {
+                    from {
+                        opacity: 1;
+                    }
+                    to {
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(fadeOutStyle);
+            
+            // Remove element after animation completes
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 3000);
+    }
+
+    let currentEmployeeId = null;
+    let currentFaceId = null;
+
+    // Delete Face functions
+    function confirmDeleteFace(employeeId, faceId) {
+        currentEmployeeId = employeeId;
+        currentFaceId = faceId;
+        document.getElementById('deleteFaceModal').classList.remove('hidden');
+        document.getElementById('deleteFaceModal').classList.add('flex');
+        document.getElementById('confirmDeleteFaceBtn').onclick = deleteFace;
+    }
+
+    function closeDeleteFaceModal() {
+        document.getElementById('deleteFaceModal').classList.add('hidden');
+        document.getElementById('deleteFaceModal').classList.remove('flex');
+        currentEmployeeId = null;
+        currentFaceId = null;
+    }
+
+    async function deleteFace() {
+        if (!currentEmployeeId || !currentFaceId) return;
+        
+        try {
+            const response = await fetch(`/employees/${currentEmployeeId}/face/${currentFaceId}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (response.ok) {
+                // Show success message using our toast function
+                showToast('Face data deleted successfully!', 'success');
+
+                // Refresh the page after 1 second
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                throw new Error('Failed to delete face data');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            // Show error message using our toast function
+            showToast('Failed to delete face data. Please try again.', 'error');
+        } finally {
+            closeDeleteFaceModal();
+        }
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('deleteFaceModal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            closeDeleteFaceModal();
+        }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !document.getElementById('deleteFaceModal').classList.contains('hidden')) {
+            closeDeleteFaceModal();
+        }
+    });
+
+    // Dropzone file preview functionality
+    const dropzone = document.getElementById('dropzone-file');
+    const dropzoneLabel = dropzone.parentElement;
+    const dropzoneContent = document.getElementById('dropzone-content');
+    const previewContainer = document.getElementById('preview-container');
+    const previewGrid = document.getElementById('preview-grid');
+    const clearFilesBtn = document.getElementById('clear-files');
+    
+    // File counter
+    let fileCount = 0;
+    
+    // Handle file selection
+    dropzone.addEventListener('change', handleFiles);
+    
+    // Drag and drop functionality
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropzoneLabel.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropzoneLabel.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropzoneLabel.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+        dropzoneLabel.classList.add('border-blue-500', 'bg-blue-50');
+    }
+    
+    function unhighlight() {
+        dropzoneLabel.classList.remove('border-blue-500', 'bg-blue-50');
+    }
+    
+    // Handle drop event
+    dropzoneLabel.addEventListener('drop', function(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        handleFiles({ target: { files: files } });
+    });
+    
+    // Handle file selection and preview
+    function handleFiles(e) {
+        const files = e.target.files;
+        
+        if (files.length > 0) {
+            // Show preview container, hide dropzone content
+            previewContainer.classList.remove('hidden');
+            dropzoneContent.classList.add('hidden');
+            
+            // Clear previous previews if first selection
+            if (fileCount === 0) {
+                previewGrid.innerHTML = '';
+            }
+            
+            // Process each file
+            Array.from(files).forEach(file => {
+                if (!file.type.match('image.*')) return;
+                
+                fileCount++;
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'relative group';
+                    
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = file.name;
+                    img.className = 'w-full h-24 object-cover rounded-lg';
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.type = 'button';
+                    deleteBtn.className = 'absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-700 transition-opacity';
+                    deleteBtn.innerHTML = '<svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
+                    deleteBtn.title = 'Remove image';
+                    
+                    // Add delete functionality to individual images
+                    deleteBtn.addEventListener('click', function() {
+                        previewItem.remove();
+                        fileCount--;
+                        
+                        // Update UI if no files left
+                        if (fileCount === 0) {
+                            resetDropzone();
+                        }
+                    });
+                    
+                    // Add elements to preview
+                    previewItem.appendChild(img);
+                    previewItem.appendChild(deleteBtn);
+                    previewGrid.appendChild(previewItem);
+                };
+                
+                reader.readAsDataURL(file);
+            });
+        }
+    }
+    
+    // Clear all files
+    clearFilesBtn.addEventListener('click', function() {
+        resetDropzone();
+        
+        // Clear the file input
+        dropzone.value = '';
+        fileCount = 0;
+    });
+    
+    function resetDropzone() {
+        // Hide preview container, show dropzone content
+        previewContainer.classList.add('hidden');
+        dropzoneContent.classList.remove('hidden');
+        
+        // Clear previews
+        previewGrid.innerHTML = '';
+    }
+</script>
 {% endblock %}

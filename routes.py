@@ -41,8 +41,39 @@ def index():
 
 @app.route('/employees')
 def employees():
-    employees_list = Employee.query.all()
-    return render_template('employees.html', employees=employees_list)
+    # Get page number from request, default to 1
+    page = request.args.get('page', 1, type=int)
+    
+    # Get records per page, default to 10
+    per_page = request.args.get('per_page', 10, type=int)
+    
+    # Limit per_page to reasonable values
+    if per_page > 100:
+        per_page = 100
+    # Ensure per_page is at least 1
+    if per_page < 1:
+        per_page = 1
+    
+    # Get paginated results
+    pagination = Employee.query.order_by(Employee.name).paginate(page=page, per_page=per_page, error_out=False)
+    employees_list = pagination.items
+    
+    # Get total records
+    total_records = Employee.query.count()
+    
+    # Calculate page ranges for larger datasets
+    page_range = 5  # Show 5 pages before and after current page
+    start_page = max(1, page - page_range)
+    end_page = min(pagination.pages, page + page_range)
+    
+    return render_template('employees.html', 
+                          employees=employees_list,
+                          pagination=pagination,
+                          total_records=total_records,
+                          page=page,
+                          per_page=per_page,
+                          start_page=start_page,
+                          end_page=end_page)
 
 @app.route('/employees/add', methods=['POST'])
 def add_employee():
@@ -112,11 +143,52 @@ def upload_employee_face(employee_id):
         
         if success_count > 0:
             db.session.commit()
-            return redirect(url_for('view_employee', employee_id=employee.id))
+            # Return with success message for toast
+            return redirect(url_for('view_employee', employee_id=employee.id, 
+                                   upload_status='success', 
+                                   count=success_count))
         else:
             return render_template('upload_face.html', error='No valid faces detected in the uploaded images', employee=employee)
     
     return render_template('upload_face.html', employee=employee)
+
+@app.route('/employees/<int:employee_id>/face/<int:face_id>/delete', methods=['POST'])
+def delete_employee_face(employee_id, face_id):
+    try:
+        # Find the face data by ID
+        face_data = FaceData.query.get_or_404(face_id)
+        
+        # Verify that the face belongs to the correct employee
+        if face_data.employee_id != employee_id:
+            return jsonify({'error': 'Face data does not belong to this employee'}), 403
+        
+        # Get the image filename before deleting the record
+        image_filename = face_data.image
+        
+        # Delete the face data record
+        db.session.delete(face_data)
+        db.session.commit()
+        
+        # Delete the actual image file
+        try:
+            image_path = os.path.join(current_app.config['UPLOAD_FOLDER'], image_filename)
+            if os.path.exists(image_path):
+                os.remove(image_path)
+        except Exception as e:
+            # Log the error but don't fail if file deletion fails
+            print(f"Error removing file: {str(e)}")
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Face data deleted successfully'
+        }), 200
+    except Exception as e:
+        # Rollback in case of error
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to delete face data: {str(e)}'
+        }), 500
 
 @app.route('/attendance/report')
 def attendance_report():
@@ -128,7 +200,15 @@ def attendance_report():
     
     # Get page number from request, default to 1
     page = request.args.get('page', 1, type=int)
-    per_page = 10  # Number of records per page
+    
+    # Get records per page, default to 10 but allow users to choose
+    per_page = request.args.get('per_page', 10, type=int)
+    # Limit per_page to reasonable max value only
+    if per_page > 100:
+        per_page = 100
+    # Ensure per_page is at least 1
+    if per_page < 1:
+        per_page = 1
     
     query = Attendance.query.join(Employee)
     
@@ -152,11 +232,20 @@ def attendance_report():
     # Get unique departments for filter
     departments = db.session.query(Employee.department).distinct().all()
     
+    # Calculate page ranges for larger datasets
+    page_range = 5  # Show 5 pages before and after current page
+    start_page = max(1, page - page_range)
+    end_page = min(pagination.pages, page + page_range)
+    
     return render_template('attendance_report.html',
                          attendance_records=attendance_records,
                          pagination=pagination,
                          total_records=total_records,
-                         departments=[d[0] for d in departments if d[0]])
+                         departments=[d[0] for d in departments if d[0]],
+                         page=page,
+                         per_page=per_page,
+                         start_page=start_page,
+                         end_page=end_page)
 
 @app.route('/process_frame', methods=['POST'])
 def process_frame():
@@ -552,4 +641,26 @@ def get_config():
             'check_out_time': config.check_out_time.strftime('%H:%M')
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500 
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/delete_attendance/<int:attendance_id>', methods=['POST'])
+def delete_attendance(attendance_id):
+    try:
+        # Find the attendance record by ID
+        attendance = Attendance.query.get_or_404(attendance_id)
+        
+        # Delete the record
+        db.session.delete(attendance)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Attendance record deleted successfully'
+        }), 200
+    except Exception as e:
+        # Rollback in case of error
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to delete record: {str(e)}'
+        }), 500
