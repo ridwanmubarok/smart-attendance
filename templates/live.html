@@ -40,6 +40,22 @@
                                         </p>
                                     </div>
                                 </div>
+                                <div id="cctvStreamContainer" class="absolute inset-0 w-full h-full hidden">
+                                    <img id="cctvStream" class="w-full h-full object-cover"
+                                        style="background-color: black;" />
+                                    <div id="cctvError"
+                                        class="absolute inset-0 flex items-center justify-center text-red-500 hidden">
+                                        <div class="text-center">
+                                            <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24"
+                                                stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            </svg>
+                                            <p class="mt-2 text-lg font-medium" id="cctvErrorMessage">Error loading CCTV
+                                                stream</p>
+                                        </div>
+                                    </div>
+                                </div>
                                 <video id="video"
                                     class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500"
                                     autoplay playsinline muted></video>
@@ -193,10 +209,23 @@
     }
 
     function drawFaceBox(x, y, width, height, name, confidence, status, scale) {
+        // Validate coordinates and dimensions
+        if (!isFinite(x) || !isFinite(y) || !isFinite(width) || !isFinite(height)) {
+            console.error('Invalid face box coordinates:', { x, y, width, height });
+            return;
+        }
+
+        // Scale coordinates
         const scaledX = x * scale.scaleX;
         const scaledY = y * scale.scaleY;
         const scaledWidth = width * scale.scaleX;
         const scaledHeight = height * scale.scaleY;
+
+        console.log('Drawing face box with coordinates:', {
+            original: { x, y, width, height },
+            scaled: { scaledX, scaledY, scaledWidth, scaledHeight },
+            scale: scale
+        });
 
         // Draw face box with animation
         ctx.strokeStyle = '#10B981';
@@ -214,39 +243,64 @@
         const text = `${name} (${(confidence * 100).toFixed(0)}%)`;
         const statusText = status;
 
+        // Calculate text positions
+        const textX = Math.max(5, scaledX);
+        const textY = Math.max(20, scaledY - 10);
+        const statusY = Math.max(40, scaledY - 30);
+
         // Draw background for name with gradient
-        const gradient = ctx.createLinearGradient(scaledX, scaledY - 25, scaledX + ctx.measureText(text).width + 10, scaledY - 5);
+        const textWidth = ctx.measureText(text).width + 10;
+        const gradient = ctx.createLinearGradient(
+            textX,
+            textY - 20,
+            textX + textWidth,
+            textY
+        );
         gradient.addColorStop(0, 'rgba(16, 185, 129, 0.95)');
         gradient.addColorStop(1, 'rgba(6, 95, 70, 0.95)');
         ctx.fillStyle = gradient;
-        const textWidth = ctx.measureText(text).width + 10;
-        ctx.fillRect(scaledX, scaledY - 25, textWidth, 20);
+        ctx.fillRect(textX, textY - 20, textWidth, 20);
 
         // Draw background for status
         const statusWidth = ctx.measureText(statusText).width + 10;
         let statusGradient;
         if (status === 'Checked In') {
-            statusGradient = ctx.createLinearGradient(scaledX, scaledY - 45, scaledX + statusWidth, scaledY - 25);
+            statusGradient = ctx.createLinearGradient(
+                textX,
+                statusY - 20,
+                textX + statusWidth,
+                statusY
+            );
             statusGradient.addColorStop(0, 'rgba(16, 185, 129, 0.95)');
             statusGradient.addColorStop(1, 'rgba(6, 95, 70, 0.95)');
         } else if (status === 'Checked Out') {
-            statusGradient = ctx.createLinearGradient(scaledX, scaledY - 45, scaledX + statusWidth, scaledY - 25);
+            statusGradient = ctx.createLinearGradient(
+                textX,
+                statusY - 20,
+                textX + statusWidth,
+                statusY
+            );
             statusGradient.addColorStop(0, 'rgba(59, 130, 246, 0.95)');
             statusGradient.addColorStop(1, 'rgba(29, 78, 216, 0.95)');
         } else {
-            statusGradient = ctx.createLinearGradient(scaledX, scaledY - 45, scaledX + statusWidth, scaledY - 25);
+            statusGradient = ctx.createLinearGradient(
+                textX,
+                statusY - 20,
+                textX + statusWidth,
+                statusY
+            );
             statusGradient.addColorStop(0, 'rgba(156, 163, 175, 0.95)');
             statusGradient.addColorStop(1, 'rgba(75, 85, 99, 0.95)');
         }
         ctx.fillStyle = statusGradient;
-        ctx.fillRect(scaledX, scaledY - 45, statusWidth, 20);
+        ctx.fillRect(textX, statusY - 20, statusWidth, 20);
 
         // Draw text
         ctx.fillStyle = '#FFFFFF';
         ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         ctx.shadowBlur = 2;
-        ctx.fillText(text, scaledX + 5, scaledY - 10);
-        ctx.fillText(statusText, scaledX + 5, scaledY - 30);
+        ctx.fillText(text, textX + 5, textY);
+        ctx.fillText(statusText, textX + 5, statusY);
 
         // Reset shadow
         ctx.shadowColor = 'transparent';
@@ -255,53 +309,128 @@
 
     async function startCamera() {
         try {
+            console.log('Starting camera initialization...');
+
             // Get active camera configuration
             const response = await fetch('/api/config/camera');
             const config = await response.json();
-
             if (!config || !config.camera_source) {
                 throw new Error('No camera configuration found. Please configure camera in settings first.');
             }
-
-            let constraints = {
-                video: {
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
-                }
-            };
 
             // If webcam is configured
             if (config.camera_source === 'webcam') {
                 if (!config.active_camera_id) {
                     throw new Error('No webcam selected. Please select a webcam in settings first.');
                 }
-                constraints.video.deviceId = { exact: config.active_camera_id };
+
+                let constraints = {
+                    video: {
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                        deviceId: { exact: config.active_camera_id }
+                    }
+                };
+
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = stream;
+                video.controls = false;
+                document.getElementById('cctvStreamContainer').classList.add('hidden');
+                document.getElementById('video').classList.remove('hidden');
             }
             // If CCTV is configured
             else if (config.camera_source === 'cctv') {
                 if (!config.rtsp_url) {
                     throw new Error('No RTSP URL configured. Please configure CCTV settings first.');
                 }
-                // For CCTV, we'll need to handle this differently
-                // This will be implemented in the backend
-                throw new Error('CCTV support will be implemented soon.');
+
+                console.log('Initializing CCTV stream with URL:', config.rtsp_url);
+
+                // Hide video element and show CCTV stream container
+                document.getElementById('video').classList.add('hidden');
+                document.getElementById('cctvStreamContainer').classList.remove('hidden');
+                document.getElementById('cctvError').classList.add('hidden');
+
+                // Set up WebSocket connection for CCTV stream
+                const wsUrl = `ws://${window.location.host}/ws/stream`;
+                console.log('Connecting to WebSocket:', wsUrl);
+
+                const ws = new WebSocket(wsUrl);
+                ws.binaryType = 'arraybuffer';
+
+                // Set connection timeout
+                const connectionTimeout = setTimeout(() => {
+                    if (ws.readyState !== WebSocket.OPEN) {
+                        console.error('WebSocket connection timeout');
+                        ws.close();
+                        showCCTVError('Connection timeout. Please check your network and camera settings.');
+                    }
+                }, 10000);
+
+                ws.onopen = function () {
+                    console.log('WebSocket connection established');
+                    clearTimeout(connectionTimeout);
+                    // Send the RTSP URL to the backend
+                    const message = {
+                        rtsp_url: config.rtsp_url,
+                        username: config.cctv_username || '',
+                        password: config.cctv_password || ''
+                    };
+                    console.log('Sending RTSP configuration:', message);
+                    ws.send(JSON.stringify(message));
+                };
+
+                ws.onmessage = function (event) {
+                    try {
+                        // Convert ArrayBuffer to base64
+                        const bytes = new Uint8Array(event.data);
+                        const binary = bytes.reduce((data, byte) => data + String.fromCharCode(byte), '');
+                        const base64 = btoa(binary);
+
+                        // Update image source with the new frame
+                        const cctvStream = document.getElementById('cctvStream');
+                        const imageUrl = 'data:image/jpeg;base64,' + base64;
+                        cctvStream.src = imageUrl;
+
+                        processFrameFromCCTV(imageUrl);
+                    } catch (error) {
+                        console.error('Error processing frame:', error);
+                        showCCTVError('Error processing video frame');
+                    }
+                };
+
+                ws.onerror = function (error) {
+                    console.error('WebSocket error:', error);
+                    showCCTVError('Failed to establish video stream connection');
+                };
+
+                ws.onclose = function (event) {
+                    console.log('WebSocket connection closed:', event.code, event.reason);
+                    showCCTVError('Video stream connection closed');
+                };
+
+                // Store WebSocket instance for cleanup
+                window.wsInstance = ws;
             }
 
-            stream = await navigator.mediaDevices.getUserMedia(constraints);
-            video.srcObject = stream;
-
             await new Promise((resolve) => {
-                video.onloadedmetadata = () => {
-                    video.play().then(() => {
-                        video.classList.remove('opacity-0');
-                        video.classList.add('opacity-100');
-                        cameraPlaceholder.classList.add('hidden');
-                        resolve();
-                    }).catch((error) => {
-                        console.error('Error playing video:', error);
-                        throw error;
-                    });
-                };
+                if (config.camera_source === 'webcam') {
+                    video.onloadedmetadata = () => {
+                        video.play().then(() => {
+                            video.classList.remove('opacity-0');
+                            video.classList.add('opacity-100');
+                            cameraPlaceholder.classList.add('hidden');
+                            resolve();
+                        }).catch((error) => {
+                            console.error('Error playing video:', error);
+                            throw error;
+                        });
+                    };
+                } else {
+                    // For CCTV, we don't need to wait for video metadata
+                    cameraPlaceholder.classList.add('hidden');
+                    resolve();
+                }
             });
 
             setupOverlay();
@@ -393,6 +522,94 @@
             }
         } catch (error) {
             console.error('Error processing frame:', error);
+        }
+
+        isProcessing = false;
+    }
+
+    async function processFrameFromCCTV(imageData) {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        try {
+            console.log('Processing CCTV frame...');
+            const response = await fetch('/process_frame', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ image: imageData })
+            });
+
+            const result = await response.json();
+            console.log('CCTV frame processing result:', result);
+
+            if (result.error) {
+                console.error('Error processing CCTV frame:', result.error);
+            } else if (result.detected_employees) {
+                console.log('Detected employees:', result.detected_employees);
+                displayDetections(result.detected_employees);
+
+                // Setup overlay for CCTV
+                const cctvStream = document.getElementById('cctvStream');
+                const container = document.getElementById('video-container');
+                const containerRect = container.getBoundingClientRect();
+
+                // Set canvas dimensions to match container
+                overlay.width = containerRect.width;
+                overlay.height = containerRect.height;
+
+                // Calculate scale factors based on CCTV stream dimensions
+                const streamWidth = cctvStream.naturalWidth || cctvStream.width;
+                const streamHeight = cctvStream.naturalHeight || cctvStream.height;
+
+                const scale = {
+                    scaleX: overlay.width / streamWidth,
+                    scaleY: overlay.height / streamHeight
+                };
+
+                console.log('Overlay dimensions:', {
+                    container: { width: containerRect.width, height: containerRect.height },
+                    stream: { width: streamWidth, height: streamHeight },
+                    scale: scale
+                });
+
+                clearOverlay();
+
+                result.detected_employees.forEach(employee => {
+                    if (employee.face_location) {
+                        const [y1, y2, x1, x2] = employee.face_location;
+                        const width = x2 - x1;
+                        const height = y2 - y1;
+
+                        console.log('Drawing face box for:', {
+                            name: employee.name,
+                            location: employee.face_location,
+                            width: width,
+                            height: height,
+                            scale: scale
+                        });
+
+                        if (isFinite(x1) && isFinite(y1) && isFinite(width) && isFinite(height)) {
+                            drawFaceBox(
+                                x1,
+                                y1,
+                                width,
+                                height,
+                                employee.name,
+                                employee.confidence,
+                                employee.status,
+                                scale
+                            );
+                        } else {
+                            console.warn('Invalid face location coordinates:', employee.face_location);
+                        }
+                    }
+                });
+                loadTodayAttendance();
+            }
+        } catch (error) {
+            console.error('Error processing CCTV frame:', error);
         }
 
         isProcessing = false;
@@ -501,6 +718,14 @@
         }
     }
 
+    function showCCTVError(message) {
+        console.error('CCTV Error:', message);
+        const errorDiv = document.getElementById('cctvError');
+        const errorMessage = document.getElementById('cctvErrorMessage');
+        errorMessage.textContent = message;
+        errorDiv.classList.remove('hidden');
+    }
+
     // Start camera automatically when page loads
     document.addEventListener('DOMContentLoaded', () => {
         startCamera();
@@ -519,5 +744,12 @@
 
     // Refresh attendance data periodically
     setInterval(loadTodayAttendance, 30000);
+
+    // Clean up WebSocket connection on page unload
+    window.addEventListener('beforeunload', () => {
+        if (window.wsInstance) {
+            window.wsInstance.close();
+        }
+    });
 </script>
 {% endblock %}

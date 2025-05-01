@@ -241,10 +241,11 @@
                         <div class="mt-1">
                             <input type="text" id="rtsp_url" name="rtsp_url"
                                 class="block w-full h-10 px-4 py-2.5 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                placeholder="rtsp://username:password@ip:port/stream"
+                                placeholder="rtsp://username:password@ip:554/stream1"
                                 value="{{ config.rtsp_url if config else '' }}">
                         </div>
-                        <p class="mt-1.5 text-sm text-gray-500">Enter the RTSP URL of your CCTV camera</p>
+                        <p class="mt-1.5 text-sm text-gray-500">For Tapo TC60, use format:
+                            rtsp://username:password@ip:554/stream1</p>
                     </div>
 
                     <div>
@@ -280,6 +281,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
     // Time Configuration Handler
     document.getElementById('saveTimeConfig').addEventListener('click', async function () {
@@ -462,6 +464,8 @@
         const previewIcon = startBtn.querySelector('.preview-icon');
         const previewLoading = startBtn.querySelector('.preview-loading');
         const previewText = startBtn.querySelector('.preview-text');
+        const previewVideo = document.getElementById('previewVideo');
+        const previewPlaceholder = document.getElementById('previewPlaceholder');
 
         try {
             if (previewStream) {
@@ -506,9 +510,31 @@
                     stopPreviewStream();
                 }
             } else {
-                const rtspUrl = document.getElementById('rtsp_url').value;
+                const rtspUrl = document.getElementById('rtsp_url').value.trim();
                 if (!rtspUrl) {
                     showToast('Please enter RTSP URL', 'error');
+                    return;
+                }
+
+                // Validate RTSP URL format
+                if (!rtspUrl.startsWith('rtsp://')) {
+                    showToast('RTSP URL must start with rtsp://', 'error');
+                    return;
+                }
+
+                // Validate IP address format
+                const ipMatch = rtspUrl.match(/rtsp:\/\/(?:[^@]*@)?([^:/]+)/);
+                if (!ipMatch || !ipMatch[1]) {
+                    showToast('Invalid IP address in RTSP URL', 'error');
+                    return;
+                }
+
+                const username = document.getElementById('cctv_username').value.trim();
+                const password = document.getElementById('cctv_password').value.trim();
+
+                // Only require credentials if not already in URL
+                if (!rtspUrl.includes('@') && (!username || !password)) {
+                    showToast('Please enter both username and password', 'error');
                     return;
                 }
 
@@ -520,19 +546,159 @@
                         },
                         body: JSON.stringify({
                             rtsp_url: rtspUrl,
-                            username: document.getElementById('cctv_username').value,
-                            password: document.getElementById('cctv_password').value
+                            cctv_username: username,
+                            cctv_password: password
                         })
                     });
 
+                    const data = await response.json();
+
                     if (!response.ok) {
-                        throw new Error('Failed to connect to CCTV camera');
+                        throw new Error(data.error || 'Failed to connect to CCTV camera');
                     }
 
-                    showToast('CCTV preview will be implemented soon', 'info');
+                    // If connection successful, show the video stream
+                    const streamContainer = document.createElement('div');
+                    streamContainer.className = 'absolute inset-0 flex items-center justify-center bg-black';
+                    streamContainer.id = 'streamContainer';
+                    streamContainer.style.position = 'absolute';
+                    streamContainer.style.top = '0';
+                    streamContainer.style.left = '0';
+                    streamContainer.style.width = '100%';
+                    streamContainer.style.height = '100%';
+                    streamContainer.style.overflow = 'hidden';
+
+                    // Create an image element for the stream
+                    const streamImg = document.createElement('img');
+                    streamImg.className = 'w-full h-full object-cover';
+                    streamImg.id = 'streamImg';
+                    streamImg.style.position = 'absolute';
+                    streamImg.style.top = '0';
+                    streamImg.style.left = '0';
+                    streamImg.style.width = '100%';
+                    streamImg.style.height = '100%';
+                    // Add color correction CSS filters
+                    streamImg.style.filter = 'contrast(1.1) saturate(1.1)';  // Slight enhancement to colors
+
+                    // Add double-click handler for fullscreen
+                    streamContainer.addEventListener('dblclick', function () {
+                        if (document.fullscreenElement) {
+                            document.exitFullscreen();
+                        } else {
+                            streamContainer.requestFullscreen();
+                        }
+                    });
+
+                    // Set up WebSocket connection with binary type
+                    const ws = new WebSocket(`ws://${window.location.host}/ws/stream`);
+                    ws.binaryType = 'arraybuffer';
+
+                    let lastFrameTime = 0;
+                    const frameInterval = 1000 / 30; // Target 30 FPS
+
+                    ws.onopen = function () {
+                        console.log('WebSocket connection established');
+                        // Send the RTSP URL to the backend
+                        ws.send(JSON.stringify({
+                            rtsp_url: rtspUrl.includes('@') ? rtspUrl : `rtsp://${username}:${password}@${rtspUrl.split('://')[1]}`
+                        }));
+                    };
+
+                    ws.onmessage = function (event) {
+                        try {
+                            const currentTime = performance.now();
+                            if (currentTime - lastFrameTime < frameInterval) {
+                                return; // Skip frame if too soon
+                            }
+
+                            // Convert ArrayBuffer to base64
+                            const bytes = new Uint8Array(event.data);
+                            const binary = bytes.reduce((data, byte) => data + String.fromCharCode(byte), '');
+                            const base64 = btoa(binary);
+
+                            // Update image source with the new frame
+                            streamImg.src = 'data:image/jpeg;base64,' + base64;
+                            lastFrameTime = currentTime;
+                        } catch (error) {
+                            console.error('Error processing frame:', error);
+                        }
+                    };
+
+                    ws.onerror = function (error) {
+                        console.error('WebSocket error:', error);
+                        showToast('Failed to establish video stream connection', 'error');
+                        stopPreviewStream();
+                    };
+
+                    ws.onclose = function () {
+                        console.log('WebSocket connection closed');
+                        stopPreviewStream();
+                    };
+
+                    // Store WebSocket instance for cleanup
+                    window.wsInstance = ws;
+
+                    // Add stream quality controls
+                    const qualityControls = document.createElement('div');
+                    qualityControls.className = 'absolute bottom-4 right-4 flex space-x-2 bg-black bg-opacity-50 p-2 rounded-lg';
+                    qualityControls.style.zIndex = '10';
+
+                    // Contrast control
+                    const contrastSlider = document.createElement('input');
+                    contrastSlider.type = 'range';
+                    contrastSlider.min = '0.8';
+                    contrastSlider.max = '1.2';
+                    contrastSlider.step = '0.05';
+                    contrastSlider.value = '1.1';
+                    contrastSlider.className = 'w-24';
+                    contrastSlider.addEventListener('input', updateFilters);
+
+                    // Saturation control
+                    const saturationSlider = document.createElement('input');
+                    saturationSlider.type = 'range';
+                    saturationSlider.min = '0.8';
+                    saturationSlider.max = '1.2';
+                    saturationSlider.step = '0.05';
+                    saturationSlider.value = '1.1';
+                    saturationSlider.className = 'w-24';
+                    saturationSlider.addEventListener('input', updateFilters);
+
+                    // Add labels and controls
+                    const contrastLabel = document.createElement('span');
+                    contrastLabel.textContent = 'Contrast';
+                    contrastLabel.className = 'text-white text-sm';
+
+                    const saturationLabel = document.createElement('span');
+                    saturationLabel.textContent = 'Saturation';
+                    saturationLabel.className = 'text-white text-sm';
+
+                    qualityControls.appendChild(contrastLabel);
+                    qualityControls.appendChild(contrastSlider);
+                    qualityControls.appendChild(saturationLabel);
+                    qualityControls.appendChild(saturationSlider);
+
+                    // Add controls to stream container
+                    streamContainer.appendChild(qualityControls);
+
+                    function updateFilters() {
+                        streamImg.style.filter = `contrast(${contrastSlider.value}) saturate(${saturationSlider.value})`;
+                    }
+
+                    streamContainer.appendChild(streamImg);
+
+                    // Replace video element with stream container
+                    previewVideo.style.display = 'none';
+                    previewPlaceholder.style.display = 'none';
+                    previewPlaceholder.parentNode.appendChild(streamContainer);
+
+                    startPreviewBtn.classList.add('hidden');
+                    stopPreviewBtn.classList.remove('hidden');
+
+                    showToast('Successfully connected to CCTV camera', 'success');
                 } catch (err) {
                     console.error('CCTV error:', err);
                     showToast(`CCTV error: ${err.message}`, 'error');
+                    stopPreviewStream();
                 }
             }
         } catch (error) {
@@ -552,13 +718,34 @@
         if (previewStream) {
             previewStream.getTracks().forEach(track => track.stop());
             previewStream = null;
-            previewVideo.srcObject = null;
-            previewVideo.classList.remove('opacity-100');
-            previewVideo.classList.add('opacity-0');
-            previewPlaceholder.classList.remove('hidden');
-            startPreviewBtn.classList.remove('hidden');
-            stopPreviewBtn.classList.add('hidden');
         }
+
+        // Close WebSocket connection if exists
+        if (window.wsInstance) {
+            window.wsInstance.close();
+            window.wsInstance = null;
+        }
+
+        // Remove stream container if exists
+        const streamContainer = document.getElementById('streamContainer');
+        if (streamContainer) {
+            streamContainer.remove();
+        }
+
+        const previewVideo = document.getElementById('previewVideo');
+        previewVideo.srcObject = null;
+        previewVideo.style.display = '';
+        previewVideo.classList.remove('opacity-100');
+        previewVideo.classList.add('opacity-0');
+
+        const previewPlaceholder = document.getElementById('previewPlaceholder');
+        previewPlaceholder.style.display = '';
+        previewPlaceholder.classList.remove('hidden');
+
+        const startPreviewBtn = document.getElementById('startPreview');
+        const stopPreviewBtn = document.getElementById('stopPreview');
+        startPreviewBtn.classList.remove('hidden');
+        stopPreviewBtn.classList.add('hidden');
     }
 
     // Event listeners
@@ -614,6 +801,44 @@
     // Clean up on page unload
     window.addEventListener('beforeunload', () => {
         stopPreviewStream();
+    });
+
+    // Load saved configuration on page load
+    window.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const response = await fetch('/api/config/camera');
+            const config = await response.json();
+
+            // Set camera source
+            const cameraSourceInput = document.querySelector(`input[name="camera_source"][value="${config.camera_source}"]`);
+            if (cameraSourceInput) {
+                cameraSourceInput.checked = true;
+                // Trigger change event to show/hide appropriate sections
+                cameraSourceInput.dispatchEvent(new Event('change'));
+            }
+
+            // Set RTSP configuration
+            if (config.rtsp_url) {
+                document.getElementById('rtsp_url').value = config.rtsp_url;
+            }
+            if (config.cctv_username) {
+                document.getElementById('cctv_username').value = config.cctv_username;
+            }
+            if (config.cctv_password) {
+                document.getElementById('cctv_password').value = config.cctv_password;
+            }
+
+            // Request camera permissions if webcam is selected
+            if (config.camera_source === 'webcam') {
+                await requestCameraPermission();
+                if (config.active_camera_id) {
+                    document.getElementById('webcam_device').value = config.active_camera_id;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading configuration:', error);
+            showToast('Failed to load saved configuration', 'error');
+        }
     });
 </script>
 {% endblock %}

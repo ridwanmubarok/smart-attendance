@@ -13,10 +13,20 @@ from datetime import datetime, timedelta
 from transformers import DetrImageProcessor, DetrForObjectDetection
 from models import Employee, FaceData, Attendance, db, Configuration
 from app import app
+from flask_sock import Sock
+import threading
+import queue
+import time
 
 # Initialize model and processor globally for better performance
 processor = DetrImageProcessor.from_pretrained("facebook/detr-resnet-50")
 model = DetrForObjectDetection.from_pretrained("facebook/detr-resnet-50")
+
+# Initialize Flask-Sock
+sock = Sock(app)
+
+# Store active streams
+active_streams = {}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif'}
@@ -586,16 +596,32 @@ def camera_config():
 
             # Save camera configuration
             Configuration.set_value('camera_source', data['camera_source'])
-            Configuration.set_value('active_camera_id', data['active_camera_id'])
-            Configuration.set_value('rtsp_url', data['rtsp_url'])
-            Configuration.set_value('cctv_username', data['cctv_username'])
-            Configuration.set_value('cctv_password', data['cctv_password'])
+            
+            if data['camera_source'] == 'webcam':
+                Configuration.set_value('active_camera_id', data['active_camera_id'])
+            else:
+                # For CCTV, construct and save the complete RTSP URL
+                rtsp_url = data['rtsp_url'].strip()
+                username = data.get('cctv_username', '').strip()
+                password = data.get('cctv_password', '').strip()
+
+                # If URL doesn't contain credentials and credentials are provided, add them
+                if '@' not in rtsp_url and username and password:
+                    from urllib.parse import urlparse, urlunparse
+                    parsed = urlparse(rtsp_url)
+                    netloc = f"{username}:{password}@{parsed.netloc}"
+                    rtsp_url = urlunparse(parsed._replace(netloc=netloc))
+
+                Configuration.set_value('rtsp_url', rtsp_url)
+                Configuration.set_value('cctv_username', username)
+                Configuration.set_value('cctv_password', password)
 
             return jsonify({'message': 'Camera configuration saved successfully'}), 200
         else:
             # GET method - return current configuration
+            camera_source = Configuration.get_value('camera_source', 'webcam')
             config = {
-                'camera_source': Configuration.get_value('camera_source', 'webcam'),
+                'camera_source': camera_source,
                 'active_camera_id': Configuration.get_value('active_camera_id', ''),
                 'rtsp_url': Configuration.get_value('rtsp_url', ''),
                 'cctv_username': Configuration.get_value('cctv_username', ''),
@@ -610,17 +636,105 @@ def camera_config():
 def camera_preview():
     try:
         data = request.get_json()
+        print(f"Received preview request with data: {data}")
         
         # Validate required fields for CCTV preview
         if not data or 'rtsp_url' not in data:
             return jsonify({'error': 'Missing RTSP URL'}), 400
 
-        # Here you would implement the CCTV preview logic
-        # For now, just return success
-        return jsonify({'message': 'Preview started successfully'}), 200
+        # Get credentials and URL
+        rtsp_url = data['rtsp_url'].strip()
+        username = data.get('cctv_username', '').strip()
+        password = data.get('cctv_password', '').strip()
+
+        print(f"Original RTSP URL: {rtsp_url}")
+        print(f"Username: {username}")
+        print(f"Password: {'*' * len(password) if password else 'None'}")
+
+        # Validate RTSP URL format for Tapo TC60
+        if not rtsp_url.startswith('rtsp://'):
+            return jsonify({'error': 'Invalid RTSP URL format. Must start with rtsp://'}), 400
+
+        # If URL already contains credentials, use it as is
+        if '@' not in rtsp_url and username and password:
+            try:
+                # Parse the URL to insert credentials
+                from urllib.parse import urlparse, urlunparse
+                parsed = urlparse(rtsp_url)
+                netloc = f"{username}:{password}@{parsed.netloc}"
+                rtsp_url = urlunparse(parsed._replace(netloc=netloc))
+                print(f"Modified RTSP URL with credentials: {rtsp_url}")
+            except Exception as e:
+                print(f"Error parsing RTSP URL: {str(e)}")
+                return jsonify({'error': f'Invalid RTSP URL format: {str(e)}'}), 400
+
+        # Test network connectivity first
+        import socket
+        try:
+            ip = rtsp_url.split('@')[-1].split(':')[0]
+            port = 554
+            print(f"Testing connection to {ip}:{port}")
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(10)  # 10 seconds timeout
+            result = sock.connect_ex((ip, port))
+            sock.close()
+            
+            if result != 0:
+                return jsonify({
+                    'error': 'Cannot connect to camera. Please check:'
+                    '\n1. Camera is powered on'
+                    '\n2. Camera is connected to the same network'
+                    '\n3. IP address is correct'
+                    '\n4. Port 554 is not blocked by firewall'
+                }), 400
+        except Exception as e:
+            print(f"Network connectivity test failed: {str(e)}")
+            return jsonify({
+                'error': f'Network connectivity test failed: {str(e)}'
+            }), 400
+
+        # Test the RTSP connection with timeout
+        print("Attempting to open RTSP connection...")
+        
+        # Set OpenCV RTSP preferences
+        os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp'
+        
+        cap = cv2.VideoCapture(rtsp_url)
+        cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 10000)  # 10 seconds timeout
+        
+        if not cap.isOpened():
+            print("Failed to open RTSP connection")
+            return jsonify({
+                'error': 'Failed to connect to CCTV camera. Please check:'
+                '\n1. RTSP service is enabled on the camera'
+                '\n2. Username and password are correct'
+                '\n3. RTSP URL format is correct'
+                f'\n4. Debug info: URL={rtsp_url}'
+            }), 400
+
+        print("RTSP connection opened successfully")
+        
+        # Read a frame to verify the stream
+        print("Attempting to read frame...")
+        ret, frame = cap.read()
+        if not ret:
+            print("Failed to read frame from RTSP stream")
+            cap.release()
+            return jsonify({
+                'error': 'Failed to read from CCTV camera stream. Please check:'
+                '\n1. Camera is powered on'
+                '\n2. Network bandwidth is sufficient'
+                '\n3. RTSP stream is not being accessed by other applications'
+                f'\n4. Debug info: URL={rtsp_url}'
+            }), 400
+
+        print("Successfully read frame from RTSP stream")
+        cap.release()
+        return jsonify({'message': 'Successfully connected to CCTV camera'}), 200
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error in camera_preview: {str(e)}")
+        return jsonify({'error': f'Error testing CCTV connection: {str(e)}'}), 500
 
 @app.route('/api/config')
 def get_config():
@@ -664,3 +778,155 @@ def delete_attendance(attendance_id):
             'status': 'error',
             'message': f'Failed to delete record: {str(e)}'
         }), 500
+
+def process_rtsp_stream(rtsp_url, ws):
+    try:
+        print(f"Starting RTSP stream from: {rtsp_url}")
+        
+        # Set OpenCV RTSP preferences
+        os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp|reorder_queue_size;0|buffer_size;0'
+        
+        # Open RTSP stream
+        cap = cv2.VideoCapture(rtsp_url)
+        
+        # Configure capture properties for low latency
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        cap.set(cv2.CAP_PROP_FPS, 30)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        
+        if not cap.isOpened():
+            print(f"Failed to open RTSP stream: {rtsp_url}")
+            ws.send(json.dumps({'error': 'Failed to open RTSP stream'}))
+            return
+        
+        print(f"Successfully opened RTSP stream: {rtsp_url}")
+        
+        # Get actual stream properties
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        print(f"Stream properties - FPS: {fps}, Resolution: {width}x{height}")
+        
+        frame_count = 0
+        start_time = time.time()
+        last_frame_time = 0
+        frame_interval = 1.0 / 30  # Target 30 FPS
+        
+        # JPEG encoding parameters - increased quality for better color
+        jpeg_encode_param = [cv2.IMWRITE_JPEG_QUALITY, 85]
+        
+        while True:
+            current_time = time.time()
+            if current_time - last_frame_time < frame_interval:
+                continue  # Skip if too soon for next frame
+                
+            ret, frame = cap.read()
+            if not ret:
+                print("Failed to read frame from RTSP stream")
+                break
+            
+            frame_count += 1
+            elapsed_time = current_time - start_time
+            
+            if elapsed_time >= 1:  # Log FPS every second
+                actual_fps = frame_count / elapsed_time
+                print(f"Actual FPS: {actual_fps:.2f}")
+                frame_count = 0
+                start_time = current_time
+            
+            try:
+                # No need to convert BGR to RGB since we're sending directly to browser
+                # Browser expects BGR format when decoding JPEG
+                
+                # Apply light color correction if needed
+                # frame = cv2.convertScaleAbs(frame, alpha=1.05, beta=5)  # Optional: adjust brightness/contrast
+                
+                # Encode frame to JPEG directly from BGR
+                ret, buffer = cv2.imencode('.jpg', frame, jpeg_encode_param)
+                if not ret:
+                    print("Failed to encode frame to JPEG")
+                    continue
+                
+                # Send raw bytes through WebSocket
+                ws.send(buffer.tobytes())
+                last_frame_time = current_time
+                
+            except Exception as e:
+                print(f"Error processing frame: {str(e)}")
+                break
+            
+    except Exception as e:
+        print(f"Error processing RTSP stream: {str(e)}")
+        try:
+            ws.send(json.dumps({'error': str(e)}))
+        except:
+            pass
+    finally:
+        if cap:
+            cap.release()
+        if ws in active_streams:
+            del active_streams[ws]
+        print("RTSP stream processing stopped")
+
+@sock.route('/ws/stream')
+def stream_socket(ws):
+    try:
+        # Get RTSP URL from initial message
+        message = ws.receive()
+        data = json.loads(message)
+        rtsp_url = data.get('rtsp_url')
+        
+        if not rtsp_url:
+            ws.send(json.dumps({'error': 'No RTSP URL provided'}))
+            return
+
+        # Set OpenCV RTSP preferences
+        os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp|reorder_queue_size;0|buffer_size;0'
+        
+        # Initialize video capture
+        cap = cv2.VideoCapture(rtsp_url)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        cap.set(cv2.CAP_PROP_FPS, 30)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+        if not cap.isOpened():
+            ws.send(json.dumps({'error': 'Failed to open RTSP stream'}))
+            return
+
+        last_frame_time = 0
+        frame_interval = 1.0 / 30  # Target 30 FPS
+
+        while True:
+            current_time = time.time()
+            if current_time - last_frame_time < frame_interval:
+                time.sleep(0.001)  # Small sleep to prevent CPU overload
+                continue
+
+            ret, frame = cap.read()
+            if not ret:
+                ws.send(json.dumps({'error': 'Failed to read frame'}))
+                break
+
+            # Encode frame to JPEG
+            _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+            
+            # Send frame as binary data
+            try:
+                ws.send(buffer.tobytes())
+            except Exception as e:
+                print(f"Error sending frame: {e}")
+                break
+
+            last_frame_time = current_time
+
+    except Exception as e:
+        print(f"Stream error: {e}")
+        try:
+            ws.send(json.dumps({'error': str(e)}))
+        except:
+            pass
+    finally:
+        if 'cap' in locals():
+            cap.release()
