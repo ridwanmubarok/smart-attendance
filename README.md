@@ -201,6 +201,12 @@ This project was developed as an academic project for the Internet of Things cou
 <img width="1680" alt="Screenshot 2025-04-23 at 17 04 23" src="https://github.com/user-attachments/assets/55406040-43cf-4cb5-8c55-f21bcf64606d" />
 <img width="1680" alt="Screenshot 2025-04-23 at 17 09 24" src="https://github.com/user-attachments/assets/3f714187-f451-4d2a-8994-2f1f757dbd23" />
 
+### Demo
+
+https://github.com/user-attachments/assets/8a877c7c-297c-465c-ab46-417a62f1e9cb
+
+
+
 ## Acknowledgments
 
 - DETR: Facebook AI Research
